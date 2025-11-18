@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { fetchNews, convertToNewsArticle } from '@/lib/newsdata'
+import { fetchNews, convertToNewsArticle } from '@/lib/worldnews'
 
 /**
  * GET /api/news - Fetch news articles from database
@@ -89,28 +89,27 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/news - Fetch and store new articles from Newsdata.io
+ * POST /api/news - Fetch and store new articles from WorldNewsAPI
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { query, category, language, country, sentiment, from_date, to_date } = body
+    const { query, language, country, from_date, to_date } = body
 
-    // Fetch news from Newsdata.io
+    // Fetch news from WorldNewsAPI
     const newsResponse = await fetchNews({
-      q: query,
-      category: category,
+      text: query,
       language: language || 'en',
-      country: country,
-      sentiment: sentiment,
-      from_date: from_date,
-      to_date: to_date,
+      source_countries: country || 'us',
+      earliest_publish_date: from_date,
+      latest_publish_date: to_date,
+      number: 50,
     })
 
     // Store articles in database
     const savedArticles = []
 
-    for (const article of newsResponse.results) {
+    for (const article of newsResponse.news) {
       const newsArticle = convertToNewsArticle(article)
 
       // Check if article already exists
@@ -155,8 +154,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: `Fetched ${newsResponse.results.length} articles, saved ${savedArticles.length} new articles`,
-      totalResults: newsResponse.totalResults,
+      message: `Fetched ${newsResponse.news.length} articles, saved ${savedArticles.length} new articles`,
+      totalResults: newsResponse.available,
       savedArticles,
     })
   } catch (error) {

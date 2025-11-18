@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, RefreshCw, Filter } from 'lucide-react'
 import axios from 'axios'
-import { NEWS_CATEGORIES } from '@/lib/newsdata'
+import { NEWS_CATEGORIES } from '@/lib/worldnews'
 import NewsCard from './NewsCard'
 import NewsFilters from './NewsFilters'
 

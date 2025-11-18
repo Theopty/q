@@ -5,16 +5,16 @@ A comprehensive dashboard for fetching, analyzing, and correlating news sentimen
 ## Features
 
 ### 📰 News Dashboard
-- **Fetch News from Newsdata.io**: Real-time news fetching with extensive filtering options
+- **Fetch News from WorldNewsAPI**: Real-time news fetching with built-in sentiment analysis
 - **Advanced Filtering**:
   - Keywords and search queries
-  - Categories (business, technology, politics, etc.)
-  - News sources
-  - Sentiment analysis (positive, negative, neutral)
+  - Auto-detected categories (business, technology, politics, etc.)
+  - Major US news sources only (no local papers)
+  - Sentiment analysis included (positive, negative, neutral) with -1 to 1 scoring
   - Entity recognition (organizations, people, locations)
   - Date range filtering
 - **Comprehensive Data Storage**: All news articles saved with timestamps for historical analysis
-- **Rich Metadata**: Track categories, keywords, entities, and sentiment for each article
+- **Rich Metadata**: Track categories, entities, and sentiment for each article
 
 ### 📈 Stock Market Dashboard
 - **Multi-source Stock Data**: Integrated with Alpha Vantage and Financial Modeling Prep APIs
@@ -39,7 +39,7 @@ A comprehensive dashboard for fetching, analyzing, and correlating news sentimen
 - **Database**: Prisma ORM with SQLite (easily configurable to PostgreSQL/MySQL)
 - **Data Visualization**: Recharts
 - **APIs**:
-  - Newsdata.io (news data)
+  - WorldNewsAPI (news data with sentiment analysis)
   - Alpha Vantage (stock market data)
   - Financial Modeling Prep (alternative stock data)
 
@@ -47,7 +47,7 @@ A comprehensive dashboard for fetching, analyzing, and correlating news sentimen
 
 - Node.js 18+ and npm
 - API Keys:
-  - [Newsdata.io API Key](https://newsdata.io/) (Free tier available)
+  - [WorldNewsAPI Key](https://worldnewsapi.com/) (Free tier: 100 requests/day with sentiment analysis included)
   - [Alpha Vantage API Key](https://www.alphavantage.co/support/#api-key) OR
   - [Financial Modeling Prep API Key](https://financialmodelingprep.com/developer/docs/)
 
@@ -71,7 +71,7 @@ cp .env.example .env
 
 Edit `.env` and add your API keys:
 ```env
-NEWSDATA_API_KEY=your_newsdata_api_key_here
+WORLDNEWS_API_KEY=your_worldnews_api_key_here
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key_here
 # OR
 FMP_API_KEY=your_fmp_api_key_here
@@ -99,8 +99,8 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 #### Fetching News
 1. Enter keywords in the search box (e.g., "Apple", "Tesla", "Bitcoin")
-2. Click "Fetch News" to retrieve articles from Newsdata.io
-3. Articles are automatically saved to your database with timestamps
+2. Click "Fetch Top News" to retrieve articles from WorldNewsAPI
+3. Articles are automatically saved to your database with timestamps and sentiment scores
 
 #### Filtering News
 1. Click the "Filters" button
@@ -175,7 +175,7 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 ### News APIs
 - `GET /api/news` - Fetch news articles from database
-- `POST /api/news` - Fetch new articles from Newsdata.io
+- `POST /api/news` - Fetch new articles from WorldNewsAPI with sentiment analysis
 - `GET /api/news/stats` - Get news statistics and aggregations
 
 ### Stock APIs
@@ -210,7 +210,7 @@ npx prisma db push
 ```
 
 ### Customizing News Categories
-Edit `lib/newsdata.ts` to add/remove categories:
+Edit `lib/worldnews.ts` to add/remove categories:
 ```typescript
 export const NEWS_CATEGORIES = [
   'business',
@@ -222,11 +222,11 @@ export const NEWS_CATEGORIES = [
 ## Troubleshooting
 
 ### API Rate Limits
-- **Newsdata.io Free**: 200 requests/day
+- **WorldNewsAPI Free**: 100 requests/day (includes sentiment analysis)
 - **Alpha Vantage Free**: 25 requests/day, 5 per minute
 - **FMP Free**: 250 requests/day
 
-**Solution**: Use both FMP and Alpha Vantage for better coverage, or upgrade to paid plans.
+**Solution**: Use both FMP and Alpha Vantage for better stock coverage. WorldNewsAPI free tier includes all sentiment features.
 
 ### No Data Showing
 1. Check that you've clicked "Fetch News" or "Fetch Latest Data"
@@ -293,12 +293,13 @@ MIT License - feel free to use this project for personal or commercial purposes.
 For issues or questions:
 - Open an issue on GitHub
 - Check API documentation:
-  - [Newsdata.io Docs](https://newsdata.io/documentation)
+  - [WorldNewsAPI Docs](https://worldnewsapi.com/docs/)
   - [Alpha Vantage Docs](https://www.alphavantage.co/documentation/)
   - [FMP Docs](https://financialmodelingprep.com/developer/docs/)
 
 ## Acknowledgments
 
 - Built with [Next.js](https://nextjs.org/)
-- Data from [Newsdata.io](https://newsdata.io/), [Alpha Vantage](https://www.alphavantage.co/), and [Financial Modeling Prep](https://financialmodelingprep.com/)
+- News data with sentiment analysis from [WorldNewsAPI](https://worldnewsapi.com/)
+- Stock data from [Alpha Vantage](https://www.alphavantage.co/) and [Financial Modeling Prep](https://financialmodelingprep.com/)
 - Charts powered by [Recharts](https://recharts.org/)

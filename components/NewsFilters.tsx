@@ -1,6 +1,6 @@
 'use client'
 
-import { NEWS_CATEGORIES } from '@/lib/newsdata'
+import { NEWS_CATEGORIES } from '@/lib/worldnews'
 
 interface NewsFiltersProps {
   filters: {
