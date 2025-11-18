@@ -17,8 +17,8 @@ model NewsArticle {
   url         String
   imageUrl    String?
   source      String
-  category    String[]
-  keywords    String[]
+  category    String   // JSON encoded array
+  keywords    String   // JSON encoded array
   language    String   @default("en")
   country     String?
   sentiment   String?  // positive, negative, neutral

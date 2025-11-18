@@ -67,7 +67,8 @@ export async function GET(request: NextRequest) {
 
     const categoryMap = new Map<string, number>()
     articles.forEach((article) => {
-      article.category.forEach((cat) => {
+      const categories = JSON.parse(article.category)
+      categories.forEach((cat: string) => {
         categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1)
       })
     })

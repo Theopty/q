@@ -19,18 +19,6 @@ export async function GET(request: NextRequest) {
     // Build where clause
     const where: any = {}
 
-    if (keywords && keywords.length > 0) {
-      where.keywords = {
-        hasSome: keywords,
-      }
-    }
-
-    if (categories && categories.length > 0) {
-      where.category = {
-        hasSome: categories,
-      }
-    }
-
     if (sources && sources.length > 0) {
       where.source = {
         in: sources,
@@ -58,7 +46,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const articles = await prisma.newsArticle.findMany({
+    let articles = await prisma.newsArticle.findMany({
       where,
       include: {
         entities: true,
@@ -66,10 +54,31 @@ export async function GET(request: NextRequest) {
       orderBy: {
         publishedAt: 'desc',
       },
-      take: 100,
+      take: 500,
     })
 
-    return NextResponse.json(articles)
+    // Parse JSON fields and filter in memory
+    articles = articles.map((article) => ({
+      ...article,
+      category: JSON.parse(article.category),
+      keywords: JSON.parse(article.keywords),
+    }))
+
+    // Filter by keywords if provided
+    if (keywords && keywords.length > 0) {
+      articles = articles.filter((article) =>
+        keywords.some((kw) => article.keywords.some((k: string) => k.toLowerCase().includes(kw.toLowerCase())))
+      )
+    }
+
+    // Filter by categories if provided
+    if (categories && categories.length > 0) {
+      articles = articles.filter((article) =>
+        categories.some((cat) => article.category.includes(cat))
+      )
+    }
+
+    return NextResponse.json(articles.slice(0, 100))
   } catch (error) {
     console.error('Error fetching news:', error)
     return NextResponse.json(
@@ -118,8 +127,8 @@ export async function POST(request: NextRequest) {
             url: newsArticle.url,
             imageUrl: newsArticle.imageUrl,
             source: newsArticle.source,
-            category: newsArticle.category,
-            keywords: newsArticle.keywords,
+            category: JSON.stringify(newsArticle.category),
+            keywords: JSON.stringify(newsArticle.keywords),
             language: newsArticle.language || 'en',
             country: newsArticle.country,
             sentiment: newsArticle.sentiment,
@@ -136,7 +145,12 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        savedArticles.push(saved)
+        // Parse JSON fields for response
+        savedArticles.push({
+          ...saved,
+          category: JSON.parse(saved.category),
+          keywords: JSON.parse(saved.keywords),
+        })
       }
     }
 
