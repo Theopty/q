@@ -36,6 +36,16 @@ export interface NewsdataResponse {
 }
 
 /**
+ * Major US news sources (national, not local)
+ */
+export const MAJOR_US_SOURCES = [
+  'cnn', 'foxnews', 'nytimes', 'wsj', 'washingtonpost', 'usatoday',
+  'nbcnews', 'abcnews', 'cbsnews', 'reuters', 'apnews', 'bloomberg',
+  'cnbc', 'forbes', 'thehill', 'politico', 'npr', 'axios',
+  'theguardian', 'bbc', 'time', 'newsweek', 'yahoo'
+]
+
+/**
  * Fetch news from Newsdata.io API
  */
 export async function fetchNews(params: {
@@ -47,6 +57,7 @@ export async function fetchNews(params: {
   from_date?: string // YYYY-MM-DD
   to_date?: string // YYYY-MM-DD
   page?: string
+  prioritydomain?: string // 'top' for highest priority sources
 }): Promise<NewsdataResponse> {
   const apiKey = process.env.NEWSDATA_API_KEY
 
@@ -55,15 +66,32 @@ export async function fetchNews(params: {
   }
 
   try {
+    // Default to top news from US
+    const requestParams: any = {
+      apikey: apiKey,
+      country: params.country || 'us',
+      language: params.language || 'en',
+      prioritydomain: 'top', // Get only top priority sources
+      ...params,
+      category: params.category?.join(','),
+    }
+
     const response = await axios.get(NEWSDATA_API_URL, {
-      params: {
-        apikey: apiKey,
-        ...params,
-        category: params.category?.join(','),
-      },
+      params: requestParams,
     })
 
-    return response.data
+    // Filter to only major US sources (no local newspapers)
+    const filteredResults = response.data.results.filter((article: NewsdataArticle) => {
+      const source = article.source_id.toLowerCase()
+      // Check if source is in major sources or has high priority
+      return MAJOR_US_SOURCES.includes(source) || article.source_priority === 1
+    })
+
+    return {
+      ...response.data,
+      results: filteredResults,
+      totalResults: filteredResults.length,
+    }
   } catch (error) {
     console.error('Error fetching news from Newsdata.io:', error)
     throw error

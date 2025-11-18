@@ -22,12 +22,15 @@ interface NewsArticle {
   entities: Array<{ name: string; type: string }>
 }
 
+type SortOption = 'date-desc' | 'date-asc' | 'source-asc' | 'source-desc' | 'sentiment'
+
 export default function NewsDashboard() {
   const [articles, setArticles] = useState<NewsArticle[]>([])
   const [loading, setLoading] = useState(false)
   const [fetchingNew, setFetchingNew] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('date-desc')
   const [filters, setFilters] = useState({
     keywords: [] as string[],
     categories: [] as string[],
@@ -83,6 +86,24 @@ export default function NewsDashboard() {
     fetchArticles()
   }, [])
 
+  const sortedArticles = [...articles].sort((a, b) => {
+    switch (sortBy) {
+      case 'date-desc':
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+      case 'date-asc':
+        return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime()
+      case 'source-asc':
+        return a.source.localeCompare(b.source)
+      case 'source-desc':
+        return b.source.localeCompare(a.source)
+      case 'sentiment':
+        const sentimentOrder: Record<string, number> = { positive: 1, neutral: 2, negative: 3 }
+        return (sentimentOrder[a.sentiment || 'neutral'] || 2) - (sentimentOrder[b.sentiment || 'neutral'] || 2)
+      default:
+        return 0
+    }
+  })
+
   return (
     <div className="space-y-6">
       {/* Search and Actions Bar */}
@@ -102,7 +123,7 @@ export default function NewsDashboard() {
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
             >
               <Search className="w-4 h-4" />
-              {fetchingNew ? 'Fetching...' : 'Fetch News'}
+              {fetchingNew ? 'Fetching...' : 'Fetch Top News'}
             </button>
           </div>
           <div className="flex gap-2">
@@ -160,7 +181,34 @@ export default function NewsDashboard() {
         </div>
       </div>
 
-      {/* Articles Grid */}
+      {/* Sort Controls */}
+      {articles.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing {sortedArticles.length} top articles from major US sources
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Sort by:
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              >
+                <option value="date-desc">Latest First</option>
+                <option value="date-asc">Oldest First</option>
+                <option value="source-asc">Source (A-Z)</option>
+                <option value="source-desc">Source (Z-A)</option>
+                <option value="sentiment">Sentiment (Positive First)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Articles List */}
       {loading ? (
         <div className="text-center py-12">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600" />
@@ -169,12 +217,12 @@ export default function NewsDashboard() {
       ) : articles.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
           <p className="text-gray-600 dark:text-gray-400">
-            No articles found. Try fetching news with the search button above.
+            No articles found. Click "Fetch Top News" to get the latest headlines from major US sources.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {articles.map((article) => (
+        <div className="space-y-4">
+          {sortedArticles.map((article) => (
             <NewsCard key={article.id} article={article} />
           ))}
         </div>
