@@ -96,6 +96,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { query, language, country, from_date, to_date } = body
 
+    console.log('POST /api/news called with:', { query, language, country, from_date, to_date })
+
     // Fetch news from WorldNewsAPI
     const newsResponse = await fetchNews({
       text: query,
@@ -105,6 +107,8 @@ export async function POST(request: NextRequest) {
       latest_publish_date: to_date,
       number: 50,
     })
+
+    console.log(`WorldNewsAPI returned ${newsResponse.news.length} articles (${newsResponse.available} available total)`)
 
     // Store articles in database
     const savedArticles = []
@@ -118,50 +122,58 @@ export async function POST(request: NextRequest) {
       })
 
       if (!existing) {
-        const saved = await prisma.newsArticle.create({
-          data: {
-            title: newsArticle.title,
-            description: newsArticle.description,
-            content: newsArticle.content,
-            url: newsArticle.url,
-            imageUrl: newsArticle.imageUrl,
-            source: newsArticle.source,
-            category: JSON.stringify(newsArticle.category),
-            keywords: JSON.stringify(newsArticle.keywords),
-            language: newsArticle.language || 'en',
-            country: newsArticle.country,
-            sentiment: newsArticle.sentiment,
-            publishedAt: newsArticle.publishedAt,
-            entities: {
-              create: newsArticle.entities?.map((entity) => ({
-                name: entity.name,
-                type: entity.type,
-              })),
+        try {
+          const saved = await prisma.newsArticle.create({
+            data: {
+              title: newsArticle.title,
+              description: newsArticle.description,
+              content: newsArticle.content,
+              url: newsArticle.url,
+              imageUrl: newsArticle.imageUrl,
+              source: newsArticle.source,
+              category: JSON.stringify(newsArticle.category),
+              keywords: JSON.stringify(newsArticle.keywords),
+              language: newsArticle.language || 'en',
+              country: newsArticle.country,
+              sentiment: newsArticle.sentiment,
+              publishedAt: newsArticle.publishedAt,
+              entities: {
+                create: newsArticle.entities?.map((entity) => ({
+                  name: entity.name,
+                  type: entity.type,
+                })),
+              },
             },
-          },
-          include: {
-            entities: true,
-          },
-        })
+            include: {
+              entities: true,
+            },
+          })
 
-        // Parse JSON fields for response
-        savedArticles.push({
-          ...saved,
-          category: JSON.parse(saved.category),
-          keywords: JSON.parse(saved.keywords),
-        })
+          // Parse JSON fields for response
+          savedArticles.push({
+            ...saved,
+            category: JSON.parse(saved.category),
+            keywords: JSON.parse(saved.keywords),
+          })
+        } catch (saveError) {
+          console.error('Error saving article:', newsArticle.title, saveError)
+        }
+      } else {
+        console.log('Article already exists:', newsArticle.title)
       }
     }
+
+    console.log(`Saved ${savedArticles.length} new articles to database`)
 
     return NextResponse.json({
       message: `Fetched ${newsResponse.news.length} articles, saved ${savedArticles.length} new articles`,
       totalResults: newsResponse.available,
       savedArticles,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching and storing news:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch and store news articles' },
+      { error: error.message || 'Failed to fetch and store news articles' },
       { status: 500 }
     )
   }

@@ -316,6 +316,19 @@ export default function StockNewsChart() {
 
       console.log('News fetch response:', postResponse.data)
 
+      const { message, totalResults, savedArticles } = postResponse.data
+
+      // Show what happened
+      if (totalResults === 0) {
+        alert(`WorldNewsAPI found 0 articles for "${newsKeyword}" on ${newsDate}.\n\nThis could mean:\n1. No articles published on this exact date\n2. Try a recent date (last 7-30 days)\n3. Try a broader keyword like "politics" or "news"`)
+        setShowNewsResults(true)
+        return
+      }
+
+      if (savedArticles.length === 0) {
+        alert(`WorldNewsAPI found ${totalResults} articles, but they were already in the database.\n\n${message}`)
+      }
+
       // Then get from database
       const newsParams = new URLSearchParams({
         dateFrom: newsDate,
@@ -332,8 +345,9 @@ export default function StockNewsChart() {
       setFetchedNews(filtered)
       setShowNewsResults(true)
 
-      if (filtered.length === 0) {
-        alert(`Found ${response.data.length} articles on ${newsDate}, but none matched "${newsKeyword}". Try a broader search term.`)
+      if (filtered.length === 0 && response.data.length > 0) {
+        alert(`Found ${response.data.length} articles on ${newsDate}, but none matched "${newsKeyword}".\n\nShowing all ${response.data.length} articles from that date instead.`)
+        setFetchedNews(response.data)
       }
     } catch (error: any) {
       console.error('Error fetching news:', error)
