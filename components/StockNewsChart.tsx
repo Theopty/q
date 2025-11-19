@@ -44,8 +44,7 @@ interface ChartDataPoint {
 
 export default function StockNewsChart() {
   const [selectedStock, setSelectedStock] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<Array<{ symbol: string; name: string }>>([])
+  const [availableStocks, setAvailableStocks] = useState<Array<{ symbol: string; name: string }>>([])
   const [stockData, setStockData] = useState<StockData[]>([])
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([])
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
@@ -76,37 +75,98 @@ export default function StockNewsChart() {
   const [availableSources, setAvailableSources] = useState<string[]>([])
   const [availableEntities, setAvailableEntities] = useState<string[]>([])
 
-  const searchStocks = async () => {
-    if (!searchQuery) return
+  // Load available stocks from database on mount
+  useEffect(() => {
+    loadAvailableStocks()
+  }, [])
+
+  const loadAvailableStocks = async () => {
     try {
-      const response = await axios.get(`/api/stocks?search=${searchQuery}`)
-      setSearchResults(response.data)
+      const response = await axios.get('/api/stocks/watchlist')
+      setAvailableStocks(response.data)
     } catch (error) {
-      console.error('Error searching stocks:', error)
+      console.error('Error loading stocks:', error)
     }
   }
 
-  const selectStock = async (symbol: string, name: string) => {
+  const selectStock = async (symbol: string) => {
+    if (!symbol) {
+      setSelectedStock('')
+      setStockData([])
+      setNewsArticles([])
+      setChartData([])
+      return
+    }
+
     setSelectedStock(symbol)
-    setSearchResults([])
-    setSearchQuery('')
     await loadStockAndNews(symbol)
   }
 
   const loadStockAndNews = async (symbol: string) => {
     setLoading(true)
     try {
-      // Fetch stock data
-      const stockParams = new URLSearchParams({ symbol, dateFrom, dateTo })
-      let stockResponse = await axios.get(`/api/stocks?${stockParams.toString()}`)
+      // Get existing stock data from database
+      const stockParams = new URLSearchParams({ symbol })
+      const existingResponse = await axios.get(`/api/stocks?${stockParams.toString()}`)
+      const existingData = existingResponse.data
 
-      // If no data, fetch from API
-      if (stockResponse.data.length === 0) {
+      // Determine date gaps to fetch
+      let needsBackfill = false
+      let needsUpdate = false
+      let backfillFrom = dateFrom
+      let updateFrom = dateTo
+
+      if (existingData.length > 0) {
+        // Sort by timestamp
+        const sorted = [...existingData].sort((a: StockData, b: StockData) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        )
+
+        const oldestDate = new Date(sorted[0].timestamp)
+        const newestDate = new Date(sorted[sorted.length - 1].timestamp)
+        const requestedFrom = new Date(dateFrom)
+        const requestedTo = new Date(dateTo)
+
+        // Check if we need to backfill historical data
+        if (requestedFrom < oldestDate) {
+          needsBackfill = true
+          backfillFrom = dateFrom
+          const dayBeforeOldest = new Date(oldestDate)
+          dayBeforeOldest.setDate(dayBeforeOldest.getDate() - 1)
+          const backfillTo = dayBeforeOldest.toISOString().split('T')[0]
+
+          console.log(`Backfilling ${symbol} from ${backfillFrom} to ${backfillTo}`)
+          await axios.post('/api/stocks', {
+            symbol,
+            from: backfillFrom,
+            to: backfillTo
+          })
+        }
+
+        // Check if we need to fetch recent data
+        if (requestedTo > newestDate) {
+          needsUpdate = true
+          const dayAfterNewest = new Date(newestDate)
+          dayAfterNewest.setDate(dayAfterNewest.getDate() + 1)
+          updateFrom = dayAfterNewest.toISOString().split('T')[0]
+
+          console.log(`Updating ${symbol} from ${updateFrom} to ${dateTo}`)
+          await axios.post('/api/stocks', {
+            symbol,
+            from: updateFrom,
+            to: dateTo
+          })
+        }
+      } else {
+        // No data exists, fetch entire range
+        console.log(`Fetching ${symbol} from ${dateFrom} to ${dateTo}`)
         await axios.post('/api/stocks', { symbol, from: dateFrom, to: dateTo })
-        stockResponse = await axios.get(`/api/stocks?${stockParams.toString()}`)
       }
 
-      setStockData(stockResponse.data)
+      // Reload all data for the requested range
+      const finalParams = new URLSearchParams({ symbol, dateFrom, dateTo })
+      const finalResponse = await axios.get(`/api/stocks?${finalParams.toString()}`)
+      setStockData(finalResponse.data)
 
       // Auto-fetch news in background for this stock
       try {
@@ -139,7 +199,7 @@ export default function StockNewsChart() {
       setAvailableEntities(entities)
 
       // Combine data for chart
-      combineChartData(stockResponse.data, relevantNews)
+      combineChartData(finalResponse.data, relevantNews)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -287,73 +347,76 @@ export default function StockNewsChart() {
           Select a stock to see its price chart with news events overlaid
         </p>
 
-        {/* Stock Search */}
+        {/* Stock Selector */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && searchStocks()}
-                placeholder="Search for a stock (e.g., AAPL, TSLA, MSFT)..."
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-
-              {searchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {searchResults.map((result) => (
-                    <div
-                      key={result.symbol}
-                      onClick={() => selectStock(result.symbol, result.name)}
-                      className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0"
-                    >
-                      <div className="font-semibold text-gray-900 dark:text-white">{result.symbol}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{result.name}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex-1 min-w-[300px]">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Stock
+              </label>
+              <select
+                value={selectedStock}
+                onChange={(e) => selectStock(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-lg font-semibold"
+              >
+                <option value="">-- Choose a stock --</option>
+                {availableStocks.map((stock) => (
+                  <option key={stock.symbol} value={stock.symbol}>
+                    {stock.symbol} - {stock.name}
+                  </option>
+                ))}
+              </select>
             </div>
-            <button
-              onClick={searchStocks}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              <Search className="w-5 h-5" />
-              Search
-            </button>
+
+            {selectedStock && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div className="pt-7">
+                  <button
+                    onClick={() => loadStockAndNews(selectedStock)}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Update Range
+                  </button>
+                </div>
+                <div className="pt-7">
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+                  >
+                    <Filter className="w-4 h-4" />
+                    Filters ({selectedSources.length + selectedEntities.length + selectedSentiments.length})
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
-          {selectedStock && (
-            <div className="mt-4 flex items-center gap-4">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{selectedStock}</div>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-              />
-              <span className="text-gray-500">to</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-              />
-              <button
-                onClick={() => loadStockAndNews(selectedStock)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Update
-              </button>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
-              >
-                <Filter className="w-4 h-4" />
-                Filter News ({selectedSources.length + selectedEntities.length + selectedSentiments.length})
-              </button>
-            </div>
+          {availableStocks.length === 0 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+              No stocks in database yet. Use the search below to fetch news about a stock, which will add it to the dropdown.
+            </p>
           )}
         </div>
 
@@ -573,10 +636,10 @@ export default function StockNewsChart() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
             <Search className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Search for a Stock to Begin
+              Select a Stock to Begin
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Enter a stock symbol above to view its price chart with news events
+              Choose a stock from the dropdown above to view its price chart with news events
             </p>
           </div>
         ) : loading ? (
