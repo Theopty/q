@@ -60,19 +60,35 @@ export async function fetchNews(params: {
   }
 
   try {
-    // Default to US news in English
+    // Map parameters to WorldNewsAPI format
     const requestParams: any = {
       'source-countries': params.source_countries || 'us',
       language: params.language || 'en',
       number: params.number || 50,
       offset: params.offset || 0,
-      ...params,
+    }
+
+    // Add search query/text
+    if (params.text) {
+      requestParams.text = params.text
+    }
+
+    // Add date filters with correct parameter names
+    if (params.earliest_publish_date) {
+      requestParams['earliest-publish-date'] = params.earliest_publish_date
+    }
+    if (params.latest_publish_date) {
+      requestParams['latest-publish-date'] = params.latest_publish_date
     }
 
     // Filter to major sources
-    if (!params.news_sources) {
+    if (params.news_sources) {
+      requestParams['news-sources'] = params.news_sources
+    } else {
       requestParams['news-sources'] = MAJOR_US_SOURCES.join(',')
     }
+
+    console.log('WorldNewsAPI Request:', requestParams)
 
     const response = await axios.get(WORLDNEWS_API_URL, {
       params: requestParams,
@@ -81,9 +97,11 @@ export async function fetchNews(params: {
       },
     })
 
+    console.log('WorldNewsAPI Response:', response.data.available, 'articles available')
+
     return response.data
-  } catch (error) {
-    console.error('Error fetching news from WorldNewsAPI:', error)
+  } catch (error: any) {
+    console.error('Error fetching news from WorldNewsAPI:', error.response?.data || error.message)
     throw error
   }
 }

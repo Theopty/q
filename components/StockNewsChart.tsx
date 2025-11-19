@@ -308,11 +308,13 @@ export default function StockNewsChart() {
     setFetchingNews(true)
     try {
       // Fetch news from API
-      await axios.post('/api/news', {
+      const postResponse = await axios.post('/api/news', {
         query: newsKeyword,
         from_date: newsDate,
         to_date: newsDate,
       })
+
+      console.log('News fetch response:', postResponse.data)
 
       // Then get from database
       const newsParams = new URLSearchParams({
@@ -329,9 +331,14 @@ export default function StockNewsChart() {
 
       setFetchedNews(filtered)
       setShowNewsResults(true)
-    } catch (error) {
+
+      if (filtered.length === 0) {
+        alert(`Found ${response.data.length} articles on ${newsDate}, but none matched "${newsKeyword}". Try a broader search term.`)
+      }
+    } catch (error: any) {
       console.error('Error fetching news:', error)
-      alert('Failed to fetch news. Please check your API key and try again.')
+      const errorMsg = error.response?.data?.error || error.message || 'Unknown error'
+      alert(`Failed to fetch news: ${errorMsg}\n\nPlease check:\n1. WORLDNEWS_API_KEY is set in .env file\n2. API key is valid\n3. Date is not too far in the past`)
     } finally {
       setFetchingNews(false)
     }
