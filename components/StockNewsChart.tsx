@@ -338,31 +338,45 @@ export default function StockNewsChart() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8">
-      <div className="container mx-auto">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          Stock & News Timeline
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
-          Select a stock to see its price chart with news events overlaid
-        </p>
+    <div className="min-h-screen bg-black p-4">
+      <div className="container mx-auto max-w-[1800px]">
+        {/* Header */}
+        <div className="mb-6 border-b border-gray-800 pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight mb-1">
+                MARKET INTELLIGENCE TERMINAL
+              </h1>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">
+                Real-time stock analysis with sentiment-driven news correlation
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500 uppercase tracking-wider">SYSTEM STATUS</div>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-green-500 font-mono">LIVE</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        {/* Stock Selector */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-center gap-4 flex-wrap">
+        {/* Control Panel */}
+        <div className="bg-gray-950 border border-gray-800 rounded-sm p-4 mb-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex-1 min-w-[300px]">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Select Stock
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                INSTRUMENT
               </label>
               <select
                 value={selectedStock}
                 onChange={(e) => selectStock(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-lg font-semibold"
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-blue-500 hover:border-gray-600 transition-colors"
               >
-                <option value="">-- Choose a stock --</option>
+                <option value="">-- SELECT TICKER --</option>
                 {availableStocks.map((stock) => (
                   <option key={stock.symbol} value={stock.symbol}>
-                    {stock.symbol} - {stock.name}
+                    {stock.symbol} | {stock.name}
                   </option>
                 ))}
               </select>
@@ -371,42 +385,42 @@ export default function StockNewsChart() {
             {selectedStock && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    From Date
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    START
                   </label>
                   <input
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    To Date
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    END
                   </label>
                   <input
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                    className="px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
                   />
                 </div>
-                <div className="pt-7">
+                <div className="pt-5">
                   <button
                     onClick={() => loadStockAndNews(selectedStock)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors"
                   >
-                    Update Range
+                    REFRESH
                   </button>
                 </div>
-                <div className="pt-7">
+                <div className="pt-5">
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+                    className="px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 text-xs font-bold uppercase tracking-wider hover:bg-gray-700 transition-colors flex items-center gap-2"
                   >
-                    <Filter className="w-4 h-4" />
-                    Filters ({selectedSources.length + selectedEntities.length + selectedSentiments.length})
+                    <Filter className="w-3 h-3" />
+                    FILTERS ({selectedSources.length + selectedEntities.length + selectedSentiments.length})
                   </button>
                 </div>
               </>
@@ -414,126 +428,124 @@ export default function StockNewsChart() {
           </div>
 
           {availableStocks.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-              No stocks in database yet. Use the search below to fetch news about a stock, which will add it to the dropdown.
+            <p className="text-xs text-gray-600 mt-3 font-mono">
+              → No instruments loaded. Fetch news data to populate watchlist.
             </p>
           )}
         </div>
 
-        {/* Manual News Fetch */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            Fetch News by Keyword & Date
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Search for news articles about specific topics on a particular date (e.g., "Trump" on "November 15, 2024")
-          </p>
-          <div className="flex gap-4 items-end">
+        {/* News Search Module */}
+        <div className="bg-gray-950 border border-gray-800 rounded-sm p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              NEWS QUERY
+            </h2>
+            <div className="text-[9px] text-gray-600 font-mono">EXTERNAL FETCH</div>
+          </div>
+          <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Keyword/Topic
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                KEYWORD
               </label>
               <input
                 type="text"
                 value={newsKeyword}
                 onChange={(e) => setNewsKeyword(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && fetchNewsByDate()}
-                placeholder="e.g., Trump, Bitcoin, Apple..."
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Enter topic..."
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-xs focus:outline-none focus:border-blue-500 placeholder-gray-600"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Date
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                TARGET DATE
               </label>
               <input
                 type="date"
                 value={newsDate}
                 onChange={(e) => setNewsDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
               />
             </div>
             <button
               onClick={fetchNewsByDate}
               disabled={fetchingNews}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+              className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
-              <Search className="w-5 h-5" />
-              {fetchingNews ? 'Fetching...' : 'Fetch News'}
+              <Search className="w-3 h-3" />
+              {fetchingNews ? 'FETCHING...' : 'EXECUTE'}
             </button>
           </div>
         </div>
 
         {/* News Results Modal */}
         {showNewsResults && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowNewsResults(false)}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      News Results for "{newsKeyword}"
-                    </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {newsDate && `Date: ${format(new Date(newsDate), 'MMMM dd, yyyy')}`} • {fetchedNews.length} articles found
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowNewsResults(false)}
-                    className="flex-shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50" onClick={() => setShowNewsResults(false)}>
+            <div className="bg-gray-950 border border-gray-800 shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                    QUERY RESULTS: "{newsKeyword}"
+                  </h2>
+                  <p className="text-[10px] text-gray-500 font-mono mt-1">
+                    {newsDate && `${format(new Date(newsDate), 'yyyy-MM-dd')}`} · {fetchedNews.length} RECORDS
+                  </p>
                 </div>
+                <button
+                  onClick={() => setShowNewsResults(false)}
+                  className="p-2 hover:bg-gray-800 transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
 
+              <div className="flex-1 overflow-y-auto p-4">
                 {fetchedNews.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600 dark:text-gray-400">
-                      No articles found for "{newsKeyword}" on this date.
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                      Try a different keyword or date.
+                  <div className="text-center py-20">
+                    <p className="text-xs text-gray-500 font-mono">
+                      ⚠ NO RESULTS FOUND<br/>
+                      <span className="text-gray-600 mt-2 inline-block">Modify search parameters and retry</span>
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {fetchedNews.map((article) => (
                       <div
                         key={article.id}
-                        className="flex items-start gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
+                        className="flex items-start gap-3 p-3 border border-gray-800 bg-gray-900/50 hover:border-blue-600 hover:bg-gray-900 transition-all"
                       >
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          article.sentiment === 'positive' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                          article.sentiment === 'negative' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                          'bg-gray-100 dark:bg-gray-700 text-gray-600'
+                        <div className={`w-10 h-10 flex items-center justify-center flex-shrink-0 ${
+                          article.sentiment === 'positive' ? 'bg-green-500/10 text-green-500' :
+                          article.sentiment === 'negative' ? 'bg-red-500/10 text-red-500' :
+                          'bg-gray-700/50 text-gray-500'
                         }`}>
-                          {article.sentiment === 'positive' && <TrendingUp className="w-6 h-6" />}
-                          {article.sentiment === 'negative' && <TrendingDown className="w-6 h-6" />}
-                          {article.sentiment === 'neutral' && <Minus className="w-6 h-6" />}
+                          {article.sentiment === 'positive' && <TrendingUp className="w-5 h-5" />}
+                          {article.sentiment === 'negative' && <TrendingDown className="w-5 h-5" />}
+                          {article.sentiment === 'neutral' && <Minus className="w-5 h-5" />}
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">{article.source}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {format(new Date(article.publishedAt), 'MMM dd, yyyy HH:mm')}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[9px] font-bold text-blue-400 uppercase font-mono">{article.source}</span>
+                            <span className="text-[9px] text-gray-600 font-mono">
+                              {format(new Date(article.publishedAt), 'MMM dd, HH:mm')}
                             </span>
                             {article.sentiment && (
-                              <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-                                article.sentiment === 'positive' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                                article.sentiment === 'negative' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                                'bg-gray-100 dark:bg-gray-700 text-gray-600'
+                              <span className={`text-[8px] px-1.5 py-0.5 font-bold uppercase ${
+                                article.sentiment === 'positive' ? 'bg-green-500/20 text-green-500' :
+                                article.sentiment === 'negative' ? 'bg-red-500/20 text-red-500' :
+                                'bg-gray-700 text-gray-400'
                               }`}>
-                                {article.sentiment.toUpperCase()}
+                                {article.sentiment === 'positive' ? 'POS' : article.sentiment === 'negative' ? 'NEG' : 'NEU'}
                               </span>
                             )}
                           </div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                          <h4 className="text-sm font-medium text-gray-200 mb-2">
                             {article.title}
                           </h4>
                           {article.entities.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-2">
                               {article.entities.slice(0, 5).map((entity, idx) => (
-                                <span key={idx} className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+                                <span key={idx} className="text-[8px] px-1.5 py-0.5 bg-purple-500/10 text-purple-400 font-mono uppercase">
                                   {entity.name}
                                 </span>
                               ))}
@@ -543,9 +555,9 @@ export default function StockNewsChart() {
                             href={article.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            className="inline-flex items-center text-[10px] text-blue-400 hover:text-blue-300 font-mono uppercase tracking-wider"
                           >
-                            Read article →
+                            VIEW SOURCE →
                           </a>
                         </div>
                       </div>
@@ -559,21 +571,34 @@ export default function StockNewsChart() {
 
         {/* Filters */}
         {showFilters && selectedStock && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-gray-950 border border-gray-800 rounded-sm p-4 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">DATA FILTERS</h3>
+              <button
+                onClick={() => {
+                  setSelectedSources([])
+                  setSelectedEntities([])
+                  setSelectedSentiments([])
+                }}
+                className="px-3 py-1 bg-gray-800 border border-gray-700 text-gray-400 text-[9px] font-bold uppercase tracking-wider hover:bg-gray-700 transition-colors"
+              >
+                RESET ALL
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Sources */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Sources</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <h4 className="text-[9px] font-bold text-blue-400 uppercase tracking-wider mb-2 border-b border-gray-800 pb-1">SOURCES</h4>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
                   {availableSources.map((source) => (
-                    <label key={source} className="flex items-center">
+                    <label key={source} className="flex items-center cursor-pointer hover:bg-gray-900 px-2 py-1 rounded">
                       <input
                         type="checkbox"
                         checked={selectedSources.includes(source)}
                         onChange={() => toggleFilter(selectedSources, setSelectedSources, source)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-0 focus:ring-offset-0"
                       />
-                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 uppercase">{source}</span>
+                      <span className="ml-2 text-[10px] text-gray-400 uppercase font-mono">{source}</span>
                     </label>
                   ))}
                 </div>
@@ -581,17 +606,17 @@ export default function StockNewsChart() {
 
               {/* Entities */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Entities</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <h4 className="text-[9px] font-bold text-blue-400 uppercase tracking-wider mb-2 border-b border-gray-800 pb-1">ENTITIES</h4>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto custom-scrollbar">
                   {availableEntities.map((entity) => (
-                    <label key={entity} className="flex items-center">
+                    <label key={entity} className="flex items-center cursor-pointer hover:bg-gray-900 px-2 py-1 rounded">
                       <input
                         type="checkbox"
                         checked={selectedEntities.includes(entity)}
                         onChange={() => toggleFilter(selectedEntities, setSelectedEntities, entity)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-0 focus:ring-offset-0"
                       />
-                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">{entity}</span>
+                      <span className="ml-2 text-[10px] text-gray-300 font-mono">{entity}</span>
                     </label>
                   ))}
                 </div>
@@ -599,143 +624,185 @@ export default function StockNewsChart() {
 
               {/* Sentiment */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Sentiment</h3>
-                <div className="space-y-2">
+                <h4 className="text-[9px] font-bold text-blue-400 uppercase tracking-wider mb-2 border-b border-gray-800 pb-1">SENTIMENT</h4>
+                <div className="space-y-1.5">
                   {['positive', 'neutral', 'negative'].map((sentiment) => (
-                    <label key={sentiment} className="flex items-center">
+                    <label key={sentiment} className="flex items-center cursor-pointer hover:bg-gray-900 px-2 py-1 rounded">
                       <input
                         type="checkbox"
                         checked={selectedSentiments.includes(sentiment)}
                         onChange={() => toggleFilter(selectedSentiments, setSelectedSentiments, sentiment)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="w-3 h-3 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-0 focus:ring-offset-0"
                       />
-                      <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 capitalize">{sentiment}</span>
+                      <span className={`ml-2 text-[10px] font-bold uppercase ${
+                        sentiment === 'positive' ? 'text-green-500' :
+                        sentiment === 'negative' ? 'text-red-500' : 'text-gray-400'
+                      }`}>{sentiment}</span>
                     </label>
                   ))}
                 </div>
               </div>
-            </div>
-
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={() => {
-                  setSelectedSources([])
-                  setSelectedEntities([])
-                  setSelectedSentiments([])
-                }}
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600"
-              >
-                Clear All Filters
-              </button>
             </div>
           </div>
         )}
 
         {/* Chart */}
         {!selectedStock ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-            <Search className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Select a Stock to Begin
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Choose a stock from the dropdown above to view its price chart with news events
-            </p>
+          <div className="bg-gray-950 border border-gray-800 rounded-sm p-20 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 mx-auto mb-4 border-2 border-gray-700 rounded-sm flex items-center justify-center">
+                <Search className="w-8 h-8 text-gray-700" />
+              </div>
+              <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">
+                NO INSTRUMENT SELECTED
+              </h2>
+              <p className="text-xs text-gray-600 font-mono">
+                → Select a ticker from the dropdown to load price data and news correlation analysis
+              </p>
+            </div>
           </div>
         ) : loading ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-            <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading stock and news data...</p>
+          <div className="bg-gray-950 border border-gray-800 rounded-sm p-20 text-center">
+            <div className="animate-spin w-12 h-12 border-2 border-blue-600 border-t-transparent rounded-sm mx-auto mb-4"></div>
+            <p className="text-xs text-gray-400 font-mono uppercase tracking-wider">LOADING DATA...</p>
           </div>
         ) : chartData.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
-            <p className="text-gray-600 dark:text-gray-400">
-              No data found for this date range. Try adjusting the dates or fetching stock data first.
+          <div className="bg-gray-950 border border-gray-800 rounded-sm p-20 text-center">
+            <p className="text-xs text-gray-500 font-mono">
+              ⚠ NO DATA AVAILABLE FOR SELECTED RANGE<br/>
+              <span className="text-gray-600 mt-2 inline-block">Adjust date parameters or fetch new data</span>
             </p>
           </div>
         ) : (
           <>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Price Chart with News Events</h2>
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                    <span className="text-gray-600 dark:text-gray-400">Positive News</span>
+            {/* Price Stats */}
+            <div className="grid grid-cols-4 gap-3 mb-4">
+              <div className="bg-gray-950 border border-gray-800 rounded-sm p-3">
+                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1">CURRENT</div>
+                <div className="text-xl font-mono font-bold text-white">
+                  ${chartData[chartData.length - 1]?.price.toFixed(2) || '0.00'}
+                </div>
+              </div>
+              <div className="bg-gray-950 border border-gray-800 rounded-sm p-3">
+                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1">HIGH</div>
+                <div className="text-xl font-mono font-bold text-green-500">
+                  ${Math.max(...chartData.map(d => d.price)).toFixed(2)}
+                </div>
+              </div>
+              <div className="bg-gray-950 border border-gray-800 rounded-sm p-3">
+                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1">LOW</div>
+                <div className="text-xl font-mono font-bold text-red-500">
+                  ${Math.min(...chartData.map(d => d.price)).toFixed(2)}
+                </div>
+              </div>
+              <div className="bg-gray-950 border border-gray-800 rounded-sm p-3">
+                <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1">NEWS EVENTS</div>
+                <div className="text-xl font-mono font-bold text-blue-400">
+                  {filteredChartData.reduce((sum, point) => sum + point.news.length, 0)}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-950 border border-gray-800 rounded-sm p-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">PRICE CHART · NEWS CORRELATION</h2>
+                <div className="flex items-center gap-4 text-[9px]">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-gray-500 uppercase font-mono">POSITIVE</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-gray-500"></div>
-                    <span className="text-gray-600 dark:text-gray-400">Neutral News</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                    <span className="text-gray-500 uppercase font-mono">NEUTRAL</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                    <span className="text-gray-600 dark:text-gray-400">Negative News</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    <span className="text-gray-500 uppercase font-mono">NEGATIVE</span>
                   </div>
                 </div>
               </div>
 
               <ResponsiveContainer width="100%" height={500}>
                 <ComposedChart data={filteredChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#6b7280"
+                    style={{ fontSize: '10px', fontFamily: 'monospace' }}
+                  />
+                  <YAxis
+                    stroke="#6b7280"
+                    style={{ fontSize: '10px', fontFamily: 'monospace' }}
+                  />
                   <Tooltip content={({ active, payload }) => {
                     if (!active || !payload || !payload[0]) return null
                     const data = payload[0].payload
                     return (
-                      <div className="bg-white dark:bg-gray-800 p-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg">
-                        <p className="font-bold text-gray-900 dark:text-white">{data.date}</p>
-                        <p className="text-blue-600 dark:text-blue-400">Price: ${data.price.toFixed(2)}</p>
+                      <div className="bg-gray-950 border border-gray-700 p-3 shadow-xl">
+                        <p className="font-mono text-xs font-bold text-gray-400 uppercase">{data.date}</p>
+                        <p className="text-sm font-mono font-bold text-white mt-1">${data.price.toFixed(2)}</p>
                         {data.news.length > 0 && (
-                          <p className="text-gray-600 dark:text-gray-400 mt-2">
-                            {data.news.length} news article{data.news.length > 1 ? 's' : ''}
+                          <p className="text-[10px] text-blue-400 font-mono mt-2">
+                            {data.news.length} EVENT{data.news.length > 1 ? 'S' : ''}
                           </p>
                         )}
                       </div>
                     )
                   }} />
-                  <Legend />
-                  <Line type="monotone" dataKey="price" stroke="#2563eb" strokeWidth={3} name="Stock Price ($)" dot={false} />
+                  <Legend wrapperStyle={{ fontSize: '10px', fontFamily: 'monospace' }} />
+                  <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} name="PRICE (USD)" dot={false} />
                   <Scatter dataKey="price" shape={<CustomDot />} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
 
             {/* News Summary */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                News Articles ({filteredChartData.reduce((sum, point) => sum + point.news.length, 0)})
-              </h3>
-              <div className="space-y-3">
+            <div className="bg-gray-950 border border-gray-800 rounded-sm p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                  NEWS FEED · {filteredChartData.reduce((sum, point) => sum + point.news.length, 0)} ARTICLES
+                </h3>
+                <div className="text-[9px] text-gray-600 font-mono">FILTERED VIEW</div>
+              </div>
+              <div className="space-y-2">
                 {filteredChartData.flatMap(point => point.news).slice(0, 10).map((article) => (
                   <div
                     key={article.id}
-                    className="flex items-start gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer"
+                    className="flex items-start gap-3 p-3 border border-gray-800 bg-gray-900/50 hover:border-blue-600 hover:bg-gray-900 transition-all cursor-pointer"
                     onClick={() => setSelectedArticle(article)}
                   >
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      article.sentiment === 'positive' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                      article.sentiment === 'negative' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                      'bg-gray-100 dark:bg-gray-700 text-gray-600'
+                    <div className={`w-10 h-10 flex items-center justify-center flex-shrink-0 ${
+                      article.sentiment === 'positive' ? 'bg-green-500/10 text-green-500' :
+                      article.sentiment === 'negative' ? 'bg-red-500/10 text-red-500' :
+                      'bg-gray-700/50 text-gray-500'
                     }`}>
-                      {article.sentiment === 'positive' && <TrendingUp className="w-6 h-6" />}
-                      {article.sentiment === 'negative' && <TrendingDown className="w-6 h-6" />}
-                      {article.sentiment === 'neutral' && <Minus className="w-6 h-6" />}
+                      {article.sentiment === 'positive' && <TrendingUp className="w-5 h-5" />}
+                      {article.sentiment === 'negative' && <TrendingDown className="w-5 h-5" />}
+                      {article.sentiment === 'neutral' && <Minus className="w-5 h-5" />}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">{article.source}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {format(new Date(article.publishedAt), 'MMM dd, yyyy HH:mm')}
+                        <span className="text-[9px] font-bold text-blue-400 uppercase font-mono">{article.source}</span>
+                        <span className="text-[9px] text-gray-600 font-mono">
+                          {format(new Date(article.publishedAt), 'MMM dd, HH:mm')}
                         </span>
+                        {article.sentiment && (
+                          <span className={`text-[8px] px-1.5 py-0.5 font-bold uppercase ${
+                            article.sentiment === 'positive' ? 'bg-green-500/20 text-green-500' :
+                            article.sentiment === 'negative' ? 'bg-red-500/20 text-red-500' :
+                            'bg-gray-700 text-gray-400'
+                          }`}>
+                            {article.sentiment === 'positive' ? 'POS' : article.sentiment === 'negative' ? 'NEG' : 'NEU'}
+                          </span>
+                        )}
                       </div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                      <h4 className="text-xs font-medium text-gray-300 hover:text-white transition-colors line-clamp-2">
                         {article.title}
                       </h4>
                       {article.entities.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
+                        <div className="flex flex-wrap gap-1 mt-1.5">
                           {article.entities.slice(0, 3).map((entity, idx) => (
-                            <span key={idx} className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+                            <span key={idx} className="text-[8px] px-1.5 py-0.5 bg-purple-500/10 text-purple-400 font-mono uppercase">
                               {entity.name}
                             </span>
                           ))}
@@ -751,49 +818,56 @@ export default function StockNewsChart() {
 
         {/* Article Modal */}
         {selectedArticle && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedArticle(null)}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white pr-8">{selectedArticle.title}</h2>
-                  <button
-                    onClick={() => setSelectedArticle(null)}
-                    className="flex-shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase">{selectedArticle.source}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {format(new Date(selectedArticle.publishedAt), 'MMM dd, yyyy HH:mm')}
-                  </span>
-                  {selectedArticle.sentiment && (
-                    <span className={`text-sm px-3 py-1 rounded-full font-bold ${
-                      selectedArticle.sentiment === 'positive' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                      selectedArticle.sentiment === 'negative' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                      'bg-gray-100 dark:bg-gray-700 text-gray-600'
-                    }`}>
-                      {selectedArticle.sentiment.toUpperCase()}
+          <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50" onClick={() => setSelectedArticle(null)}>
+            <div className="bg-gray-950 border border-gray-800 shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="p-4 border-b border-gray-800 flex items-start justify-between">
+                <div className="flex-1 pr-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[9px] font-bold text-blue-400 uppercase font-mono">{selectedArticle.source}</span>
+                    <span className="text-[9px] text-gray-600 font-mono">
+                      {format(new Date(selectedArticle.publishedAt), 'yyyy-MM-dd HH:mm')}
                     </span>
-                  )}
-                </div>
-                {selectedArticle.entities.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {selectedArticle.entities.map((entity, idx) => (
-                      <span key={idx} className="text-sm px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
-                        {entity.name} ({entity.type})
+                    {selectedArticle.sentiment && (
+                      <span className={`text-[8px] px-1.5 py-0.5 font-bold uppercase ${
+                        selectedArticle.sentiment === 'positive' ? 'bg-green-500/20 text-green-500' :
+                        selectedArticle.sentiment === 'negative' ? 'bg-red-500/20 text-red-500' :
+                        'bg-gray-700 text-gray-400'
+                      }`}>
+                        SENTIMENT: {selectedArticle.sentiment === 'positive' ? 'POSITIVE' : selectedArticle.sentiment === 'negative' ? 'NEGATIVE' : 'NEUTRAL'}
                       </span>
-                    ))}
+                    )}
+                  </div>
+                  <h2 className="text-base font-bold text-white leading-tight">{selectedArticle.title}</h2>
+                </div>
+                <button
+                  onClick={() => setSelectedArticle(null)}
+                  className="flex-shrink-0 p-2 hover:bg-gray-800 transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4">
+                {selectedArticle.entities.length > 0 && (
+                  <div className="mb-4">
+                    <div className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-2">EXTRACTED ENTITIES</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedArticle.entities.map((entity, idx) => (
+                        <span key={idx} className="text-[10px] px-2 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono">
+                          {entity.name} <span className="text-purple-600">·</span> {entity.type.toUpperCase()}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
+
                 <a
                   href={selectedArticle.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="inline-block px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-700 transition-colors"
                 >
-                  Read Full Article →
+                  OPEN FULL ARTICLE →
                 </a>
               </div>
             </div>
