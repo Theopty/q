@@ -59,6 +59,11 @@ export default function StockNewsChart() {
   const [fetchedNews, setFetchedNews] = useState<NewsArticle[]>([])
   const [showNewsResults, setShowNewsResults] = useState(false)
 
+  // Add stock to watchlist
+  const [newStockSymbol, setNewStockSymbol] = useState('')
+  const [newStockName, setNewStockName] = useState('')
+  const [addingStock, setAddingStock] = useState(false)
+
   const [dateFrom, setDateFrom] = useState(() => {
     const date = new Date()
     date.setDate(date.getDate() - 30)
@@ -295,6 +300,42 @@ export default function StockNewsChart() {
     }
   }
 
+  const addStockToWatchlist = async () => {
+    if (!newStockSymbol.trim()) {
+      alert('Please enter a stock symbol (e.g., AAPL, TSLA)')
+      return
+    }
+
+    setAddingStock(true)
+    try {
+      const response = await axios.post('/api/stocks/watchlist', {
+        symbol: newStockSymbol.toUpperCase().trim(),
+        name: newStockName.trim() || newStockSymbol.toUpperCase().trim(),
+      })
+
+      console.log('Stock added to watchlist:', response.data)
+
+      // Reload the available stocks
+      await loadAvailableStocks()
+
+      // Clear inputs
+      setNewStockSymbol('')
+      setNewStockName('')
+
+      alert(`${newStockSymbol.toUpperCase()} added to watchlist! Now select it from the dropdown to load data.`)
+    } catch (error: any) {
+      console.error('Error adding stock:', error)
+      const errorMsg = error.response?.data?.error || error.message || 'Unknown error'
+      if (errorMsg.includes('already in watchlist')) {
+        alert(`${newStockSymbol.toUpperCase()} is already in your watchlist!`)
+      } else {
+        alert(`Failed to add stock: ${errorMsg}`)
+      }
+    } finally {
+      setAddingStock(false)
+    }
+  }
+
   const fetchNewsByDate = async () => {
     if (!newsKeyword.trim()) {
       alert('Please enter a keyword')
@@ -453,6 +494,52 @@ export default function StockNewsChart() {
               → No instruments loaded. Fetch news data to populate watchlist.
             </p>
           )}
+        </div>
+
+        {/* Add Stock to Watchlist */}
+        <div className="bg-gray-950 border border-gray-800 rounded-sm p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+              ADD INSTRUMENT
+            </h2>
+            <div className="text-[9px] text-gray-600 font-mono">WATCHLIST MANAGEMENT</div>
+          </div>
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                SYMBOL
+              </label>
+              <input
+                type="text"
+                value={newStockSymbol}
+                onChange={(e) => setNewStockSymbol(e.target.value.toUpperCase())}
+                onKeyPress={(e) => e.key === 'Enter' && addStockToWatchlist()}
+                placeholder="e.g., AAPL, TSLA, MSFT"
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-xs focus:outline-none focus:border-blue-500 placeholder-gray-600 uppercase"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                NAME (OPTIONAL)
+              </label>
+              <input
+                type="text"
+                value={newStockName}
+                onChange={(e) => setNewStockName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addStockToWatchlist()}
+                placeholder="e.g., Apple Inc."
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-xs focus:outline-none focus:border-blue-500 placeholder-gray-600"
+              />
+            </div>
+            <button
+              onClick={addStockToWatchlist}
+              disabled={addingStock}
+              className="px-4 py-2 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              <TrendingUp className="w-3 h-3" />
+              {addingStock ? 'ADDING...' : 'ADD'}
+            </button>
+          </div>
         </div>
 
         {/* News Search Module */}
