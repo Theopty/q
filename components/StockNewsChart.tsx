@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, TrendingUp, TrendingDown, Minus, Filter, X } from 'lucide-react'
+import { Search, TrendingUp, TrendingDown, Minus, Filter, X, Plus, Newspaper } from 'lucide-react'
 import axios from 'axios'
 import {
   ComposedChart,
@@ -57,11 +57,13 @@ export default function StockNewsChart() {
   const [fetchingNews, setFetchingNews] = useState(false)
   const [fetchedNews, setFetchedNews] = useState<NewsArticle[]>([])
   const [showNewsResults, setShowNewsResults] = useState(false)
+  const [showNewsQueryModal, setShowNewsQueryModal] = useState(false)
 
   // Add stock to watchlist
   const [newStockSymbol, setNewStockSymbol] = useState('')
   const [newStockName, setNewStockName] = useState('')
   const [addingStock, setAddingStock] = useState(false)
+  const [showAddStockModal, setShowAddStockModal] = useState(false)
 
   const [dateFrom, setDateFrom] = useState(() => {
     const date = new Date()
@@ -436,65 +438,6 @@ export default function StockNewsChart() {
             )}
           </div>
 
-          {/* Add Stock */}
-          <div className="bg-gray-950 border border-gray-800 rounded-sm p-3">
-            <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">ADD INSTRUMENT</h2>
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={newStockSymbol}
-                onChange={(e) => setNewStockSymbol(e.target.value.toUpperCase())}
-                onKeyPress={(e) => e.key === 'Enter' && addStockToWatchlist()}
-                placeholder="SYMBOL (e.g., AAPL)"
-                className="w-full px-2 py-1.5 bg-gray-900 border border-gray-700 text-white font-mono text-[10px] uppercase focus:outline-none focus:border-blue-500 placeholder-gray-600"
-              />
-              <input
-                type="text"
-                value={newStockName}
-                onChange={(e) => setNewStockName(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addStockToWatchlist()}
-                placeholder="Name (optional)"
-                className="w-full px-2 py-1.5 bg-gray-900 border border-gray-700 text-white font-mono text-[10px] focus:outline-none focus:border-blue-500 placeholder-gray-600"
-              />
-              <button
-                onClick={addStockToWatchlist}
-                disabled={addingStock}
-                className="w-full px-3 py-2 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <TrendingUp className="w-3 h-3" />
-                {addingStock ? 'ADDING...' : 'ADD'}
-              </button>
-            </div>
-          </div>
-
-          {/* News Query */}
-          <div className="bg-gray-950 border border-gray-800 rounded-sm p-3">
-            <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">NEWS QUERY</h2>
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={newsKeyword}
-                onChange={(e) => setNewsKeyword(e.target.value)}
-                placeholder="Keyword"
-                className="w-full px-2 py-1.5 bg-gray-900 border border-gray-700 text-white font-mono text-[10px] focus:outline-none focus:border-blue-500 placeholder-gray-600"
-              />
-              <input
-                type="date"
-                value={newsDate}
-                onChange={(e) => setNewsDate(e.target.value)}
-                className="w-full px-2 py-1.5 bg-gray-900 border border-gray-700 text-white font-mono text-[10px] focus:outline-none focus:border-blue-500"
-              />
-              <button
-                onClick={fetchNewsByDate}
-                disabled={fetchingNews}
-                className="w-full px-3 py-2 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <Search className="w-3 h-3" />
-                {fetchingNews ? 'FETCHING...' : 'EXECUTE'}
-              </button>
-            </div>
-          </div>
-
           {/* Sentiment Filter */}
           {selectedStock && chartData.length > 0 && (
             <div className="bg-gray-950 border border-gray-800 rounded-sm p-3">
@@ -762,6 +705,133 @@ export default function StockNewsChart() {
           )}
         </div>
       </div>
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+        <button
+          onClick={() => setShowNewsQueryModal(true)}
+          className="w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-emerald-500"
+          title="News Query"
+        >
+          <Newspaper className="w-6 h-6" />
+        </button>
+        <button
+          onClick={() => setShowAddStockModal(true)}
+          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-sm shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-blue-500"
+          title="Add Instrument"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Add Stock Modal */}
+      {showAddStockModal && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50" onClick={() => setShowAddStockModal(false)}>
+          <div className="bg-gray-950 border border-gray-800 shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                ADD INSTRUMENT
+              </h2>
+              <button onClick={() => setShowAddStockModal(false)} className="p-2 hover:bg-gray-800">
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  SYMBOL
+                </label>
+                <input
+                  type="text"
+                  value={newStockSymbol}
+                  onChange={(e) => setNewStockSymbol(e.target.value.toUpperCase())}
+                  onKeyPress={(e) => e.key === 'Enter' && addStockToWatchlist()}
+                  placeholder="e.g., AAPL, TSLA"
+                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm uppercase focus:outline-none focus:border-blue-500 placeholder-gray-600"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  NAME (OPTIONAL)
+                </label>
+                <input
+                  type="text"
+                  value={newStockName}
+                  onChange={(e) => setNewStockName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addStockToWatchlist()}
+                  placeholder="Company name"
+                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-blue-500 placeholder-gray-600"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  addStockToWatchlist()
+                  setShowAddStockModal(false)
+                }}
+                disabled={addingStock}
+                className="w-full px-4 py-3 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                {addingStock ? 'ADDING...' : 'ADD TO WATCHLIST'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* News Query Modal */}
+      {showNewsQueryModal && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50" onClick={() => setShowNewsQueryModal(false)}>
+          <div className="bg-gray-950 border border-gray-800 shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+                NEWS QUERY
+              </h2>
+              <button onClick={() => setShowNewsQueryModal(false)} className="p-2 hover:bg-gray-800">
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  KEYWORD
+                </label>
+                <input
+                  type="text"
+                  value={newsKeyword}
+                  onChange={(e) => setNewsKeyword(e.target.value)}
+                  placeholder="e.g., Apple, Tesla, Bitcoin"
+                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-600"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  DATE
+                </label>
+                <input
+                  type="date"
+                  value={newsDate}
+                  onChange={(e) => setNewsDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  fetchNewsByDate()
+                  setShowNewsQueryModal(false)
+                }}
+                disabled={fetchingNews}
+                className="w-full px-4 py-3 bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Search className="w-4 h-4" />
+                {fetchingNews ? 'FETCHING...' : 'EXECUTE QUERY'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* News Results Modal */}
       {showNewsResults && (
