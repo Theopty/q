@@ -53,6 +53,13 @@ export default function StockNewsChart() {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null)
 
+  // Manual news fetch
+  const [newsKeyword, setNewsKeyword] = useState('')
+  const [newsDate, setNewsDate] = useState('')
+  const [fetchingNews, setFetchingNews] = useState(false)
+  const [fetchedNews, setFetchedNews] = useState<NewsArticle[]>([])
+  const [showNewsResults, setShowNewsResults] = useState(false)
+
   const [dateFrom, setDateFrom] = useState(() => {
     const date = new Date()
     date.setDate(date.getDate() - 30)
@@ -228,6 +235,48 @@ export default function StockNewsChart() {
     }
   }
 
+  const fetchNewsByDate = async () => {
+    if (!newsKeyword.trim()) {
+      alert('Please enter a keyword')
+      return
+    }
+    if (!newsDate) {
+      alert('Please select a date')
+      return
+    }
+
+    setFetchingNews(true)
+    try {
+      // Fetch news from API
+      await axios.post('/api/news', {
+        query: newsKeyword,
+        from_date: newsDate,
+        to_date: newsDate,
+      })
+
+      // Then get from database
+      const newsParams = new URLSearchParams({
+        dateFrom: newsDate,
+        dateTo: newsDate,
+      })
+      const response = await axios.get(`/api/news?${newsParams.toString()}`)
+
+      // Filter for the keyword
+      const filtered = response.data.filter((article: NewsArticle) => {
+        const text = `${article.title} ${article.entities.map((e: any) => e.name).join(' ')}`.toLowerCase()
+        return text.includes(newsKeyword.toLowerCase())
+      })
+
+      setFetchedNews(filtered)
+      setShowNewsResults(true)
+    } catch (error) {
+      console.error('Error fetching news:', error)
+      alert('Failed to fetch news. Please check your API key and try again.')
+    } finally {
+      setFetchingNews(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8">
       <div className="container mx-auto">
@@ -307,6 +356,143 @@ export default function StockNewsChart() {
             </div>
           )}
         </div>
+
+        {/* Manual News Fetch */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            Fetch News by Keyword & Date
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Search for news articles about specific topics on a particular date (e.g., "Trump" on "November 15, 2024")
+          </p>
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Keyword/Topic
+              </label>
+              <input
+                type="text"
+                value={newsKeyword}
+                onChange={(e) => setNewsKeyword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && fetchNewsByDate()}
+                placeholder="e.g., Trump, Bitcoin, Apple..."
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Date
+              </label>
+              <input
+                type="date"
+                value={newsDate}
+                onChange={(e) => setNewsDate(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <button
+              onClick={fetchNewsByDate}
+              disabled={fetchingNews}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              <Search className="w-5 h-5" />
+              {fetchingNews ? 'Fetching...' : 'Fetch News'}
+            </button>
+          </div>
+        </div>
+
+        {/* News Results Modal */}
+        {showNewsResults && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowNewsResults(false)}>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      News Results for "{newsKeyword}"
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {newsDate && `Date: ${format(new Date(newsDate), 'MMMM dd, yyyy')}`} • {fetchedNews.length} articles found
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowNewsResults(false)}
+                    className="flex-shrink-0 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {fetchedNews.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      No articles found for "{newsKeyword}" on this date.
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                      Try a different keyword or date.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {fetchedNews.map((article) => (
+                      <div
+                        key={article.id}
+                        className="flex items-start gap-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
+                      >
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          article.sentiment === 'positive' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
+                          article.sentiment === 'negative' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
+                          'bg-gray-100 dark:bg-gray-700 text-gray-600'
+                        }`}>
+                          {article.sentiment === 'positive' && <TrendingUp className="w-6 h-6" />}
+                          {article.sentiment === 'negative' && <TrendingDown className="w-6 h-6" />}
+                          {article.sentiment === 'neutral' && <Minus className="w-6 h-6" />}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">{article.source}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {format(new Date(article.publishedAt), 'MMM dd, yyyy HH:mm')}
+                            </span>
+                            {article.sentiment && (
+                              <span className={`text-xs px-2 py-1 rounded-full font-bold ${
+                                article.sentiment === 'positive' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
+                                article.sentiment === 'negative' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
+                                'bg-gray-100 dark:bg-gray-700 text-gray-600'
+                              }`}>
+                                {article.sentiment.toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                            {article.title}
+                          </h4>
+                          {article.entities.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {article.entities.slice(0, 5).map((entity, idx) => (
+                                <span key={idx} className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
+                                  {entity.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <a
+                            href={article.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            Read article →
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         {showFilters && selectedStock && (
