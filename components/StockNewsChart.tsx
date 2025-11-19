@@ -193,8 +193,8 @@ export default function StockNewsChart() {
       setNewsArticles(relevantNews)
 
       // Extract unique sources and entities
-      const sources = [...new Set(relevantNews.map((a: NewsArticle) => a.source))]
-      const entities = [...new Set(relevantNews.flatMap((a: NewsArticle) => a.entities.map(e => e.name)))]
+      const sources = Array.from(new Set(relevantNews.map((a: NewsArticle) => a.source))) as string[]
+      const entities = Array.from(new Set(relevantNews.flatMap((a: NewsArticle) => a.entities.map(e => e.name)))) as string[]
       setAvailableSources(sources)
       setAvailableEntities(entities)
 
