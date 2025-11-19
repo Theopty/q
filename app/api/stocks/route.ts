@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
           addedAt: 'desc',
         },
       })
+      // Watchlist doesn't have BigInt, but keeping pattern consistent
       return NextResponse.json(watchlist)
     }
 
@@ -48,7 +49,13 @@ export async function GET(request: NextRequest) {
       take: 1000,
     })
 
-    return NextResponse.json(stockData)
+    // Convert BigInt to number for JSON serialization
+    const serializedData = stockData.map(data => ({
+      ...data,
+      volume: data.volume ? Number(data.volume) : null
+    }))
+
+    return NextResponse.json(serializedData)
   } catch (error) {
     console.error('Error fetching stock data:', error)
     return NextResponse.json(
@@ -114,9 +121,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Convert BigInt to number for JSON serialization
+    const serializedSavedData = savedData.map(data => ({
+      ...data,
+      volume: data.volume ? Number(data.volume) : null
+    }))
+
     return NextResponse.json({
       message: `Fetched ${stockData.length} data points, saved ${savedData.length} new data points`,
-      savedData,
+      savedData: serializedSavedData,
     })
   } catch (error) {
     console.error('Error fetching and storing stock data:', error)
