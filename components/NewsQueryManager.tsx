@@ -29,6 +29,12 @@ export default function NewsQueryManager() {
   const [expandFrom, setExpandFrom] = useState('')
   const [expandTo, setExpandTo] = useState('')
 
+  // New query form
+  const [newKeyword, setNewKeyword] = useState('')
+  const [newFromDate, setNewFromDate] = useState('')
+  const [newToDate, setNewToDate] = useState('')
+  const [creatingQuery, setCreatingQuery] = useState(false)
+
   useEffect(() => {
     loadQueries()
   }, [])
@@ -94,35 +100,118 @@ export default function NewsQueryManager() {
     setExpandingQuery(null)
   }
 
-  if (loading && queries.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-2 border-emerald-600 border-t-transparent rounded-sm mx-auto mb-4"></div>
-          <p className="text-xs text-gray-400 font-mono uppercase">Loading queries...</p>
-        </div>
-      </div>
-    )
-  }
+  const createNewQuery = async () => {
+    if (!newKeyword.trim() || !newFromDate || !newToDate) {
+      alert('Please enter keyword and select date range')
+      return
+    }
 
-  if (queries.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Newspaper className="w-16 h-16 mx-auto text-gray-700 mb-4" />
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">
-            NO QUERIES YET
-          </h3>
-          <p className="text-xs text-gray-600 font-mono">
-            → Use the floating button to create your first news query
-          </p>
-        </div>
-      </div>
-    )
+    try {
+      setCreatingQuery(true)
+
+      // Fetch news for the new query
+      await axios.post('/api/news', {
+        query: newKeyword,
+        from_date: newFromDate,
+        to_date: newToDate,
+      })
+
+      // Reload queries to show the new one
+      await loadQueries()
+
+      // Clear form
+      setNewKeyword('')
+      setNewFromDate('')
+      setNewToDate('')
+
+      alert('News query created successfully!')
+    } catch (error: any) {
+      console.error('Error creating query:', error)
+      alert(`Failed to create query: ${error.response?.data?.error || error.message}`)
+    } finally {
+      setCreatingQuery(false)
+    }
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* New Query Form */}
+      <div className="bg-gray-950 border border-gray-800 rounded-sm p-4">
+        <h2 className="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+          <Newspaper className="w-4 h-4" />
+          CREATE NEWS QUERY
+        </h2>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+              KEYWORD
+            </label>
+            <input
+              type="text"
+              value={newKeyword}
+              onChange={(e) => setNewKeyword(e.target.value)}
+              placeholder="e.g., Tesla, Apple, Bitcoin"
+              className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-600"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                FROM DATE
+              </label>
+              <input
+                type="date"
+                value={newFromDate}
+                onChange={(e) => setNewFromDate(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                TO DATE
+              </label>
+              <input
+                type="date"
+                value={newToDate}
+                onChange={(e) => setNewToDate(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+          <button
+            onClick={createNewQuery}
+            disabled={creatingQuery}
+            className="w-full px-4 py-3 bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            {creatingQuery ? 'FETCHING NEWS...' : 'CREATE QUERY'}
+          </button>
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {loading && queries.length === 0 ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <div className="animate-spin w-12 h-12 border-2 border-emerald-600 border-t-transparent rounded-sm mx-auto mb-4"></div>
+            <p className="text-xs text-gray-400 font-mono uppercase">Loading queries...</p>
+          </div>
+        </div>
+      ) : queries.length === 0 ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <Newspaper className="w-16 h-16 mx-auto text-gray-700 mb-4" />
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">
+              NO QUERIES YET
+            </h3>
+            <p className="text-xs text-gray-600 font-mono">
+              → Use the form above to create your first news query
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* Query List */
+        <div className="space-y-3">
       {queries.map((query) => (
         <div
           key={query.id}
@@ -263,6 +352,8 @@ export default function NewsQueryManager() {
           )}
         </div>
       ))}
+        </div>
+      )}
     </div>
   )
 }

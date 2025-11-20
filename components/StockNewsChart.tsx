@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, TrendingUp, TrendingDown, Minus, Filter, X, Plus, Newspaper } from 'lucide-react'
+import { Search, TrendingUp, TrendingDown, Minus, Filter, X, Plus } from 'lucide-react'
 import axios from 'axios'
 import {
   ComposedChart,
@@ -51,14 +51,6 @@ export default function StockNewsChart() {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null)
-
-  // Manual news fetch
-  const [newsKeyword, setNewsKeyword] = useState('')
-  const [newsDate, setNewsDate] = useState('')
-  const [fetchingNews, setFetchingNews] = useState(false)
-  const [fetchedNews, setFetchedNews] = useState<NewsArticle[]>([])
-  const [showNewsResults, setShowNewsResults] = useState(false)
-  const [showNewsQueryModal, setShowNewsQueryModal] = useState(false)
 
   // Add stock to watchlist
   const [newStockSymbol, setNewStockSymbol] = useState('')
@@ -337,45 +329,6 @@ export default function StockNewsChart() {
       }
     } finally {
       setAddingStock(false)
-    }
-  }
-
-  const fetchNewsByDate = async () => {
-    if (!newsKeyword.trim() || !newsDate) {
-      alert('Please enter a keyword and select a date')
-      return
-    }
-
-    setFetchingNews(true)
-    try {
-      const postResponse = await axios.post('/api/news', {
-        query: newsKeyword,
-        from_date: newsDate,
-        to_date: newsDate,
-      })
-
-      const { totalResults } = postResponse.data
-
-      if (totalResults === 0) {
-        alert(`WorldNewsAPI found 0 articles for "${newsKeyword}" on ${newsDate}.`)
-        return
-      }
-
-      const newsParams = new URLSearchParams({ dateFrom: newsDate, dateTo: newsDate })
-      const response = await axios.get(`/api/news?${newsParams.toString()}`)
-
-      const filtered = response.data.filter((article: NewsArticle) => {
-        const text = `${article.title} ${article.entities.map((e: any) => e.name).join(' ')}`.toLowerCase()
-        return text.includes(newsKeyword.toLowerCase())
-      })
-
-      setFetchedNews(filtered.length > 0 ? filtered : response.data)
-      setShowNewsResults(true)
-    } catch (error: any) {
-      const errorMsg = error.response?.data?.error || error.message || 'Unknown error'
-      alert(`Failed to fetch news: ${errorMsg}`)
-    } finally {
-      setFetchingNews(false)
     }
   }
 
@@ -737,15 +690,8 @@ export default function StockNewsChart() {
         </div>
       </div>
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
-        <button
-          onClick={() => setShowNewsQueryModal(true)}
-          className="w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-emerald-500"
-          title="News Query"
-        >
-          <Newspaper className="w-6 h-6" />
-        </button>
+      {/* Floating Action Button */}
+      <div className="fixed bottom-6 right-6 z-40">
         <button
           onClick={() => setShowAddStockModal(true)}
           className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-sm shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-blue-500"
@@ -806,87 +752,6 @@ export default function StockNewsChart() {
                 <TrendingUp className="w-4 h-4" />
                 {addingStock ? 'ADDING...' : 'ADD TO WATCHLIST'}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* News Query Modal */}
-      {showNewsQueryModal && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50" onClick={() => setShowNewsQueryModal(false)}>
-          <div className="bg-gray-950 border border-gray-800 shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-                NEWS QUERY
-              </h2>
-              <button onClick={() => setShowNewsQueryModal(false)} className="p-2 hover:bg-gray-800">
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  KEYWORD
-                </label>
-                <input
-                  type="text"
-                  value={newsKeyword}
-                  onChange={(e) => setNewsKeyword(e.target.value)}
-                  placeholder="e.g., Apple, Tesla, Bitcoin"
-                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-600"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  DATE
-                </label>
-                <input
-                  type="date"
-                  value={newsDate}
-                  onChange={(e) => setNewsDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900 border border-gray-700 text-white font-mono text-sm focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              <button
-                onClick={() => {
-                  fetchNewsByDate()
-                  setShowNewsQueryModal(false)
-                }}
-                disabled={fetchingNews}
-                className="w-full px-4 py-3 bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <Search className="w-4 h-4" />
-                {fetchingNews ? 'FETCHING...' : 'EXECUTE QUERY'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* News Results Modal */}
-      {showNewsResults && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50" onClick={() => setShowNewsResults(false)}>
-          <div className="bg-gray-950 border border-gray-800 shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-                QUERY RESULTS: "{newsKeyword}"
-              </h2>
-              <button onClick={() => setShowNewsResults(false)} className="p-2 hover:bg-gray-800">
-                <X className="w-4 h-4 text-gray-400" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {fetchedNews.map((article) => (
-                <div key={article.id} className="flex items-start gap-3 p-3 border border-gray-800 bg-gray-900/50">
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-gray-200 mb-2">{article.title}</h4>
-                    <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400">
-                      VIEW SOURCE →
-                    </a>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
