@@ -43,6 +43,25 @@ interface ChartDataPoint {
   news: NewsArticle[]
 }
 
+// Helper function to get keywords for stock symbol matching
+const getSymbolKeywords = (symbol: string): string[] => {
+  const symbolMap: Record<string, string[]> = {
+    'TSLA': ['tsla', 'tesla', 'elon musk', 'musk'],
+    'AAPL': ['aapl', 'apple', 'iphone', 'tim cook', 'apple inc'],
+    'GOOGL': ['googl', 'google', 'alphabet', 'sundar pichai'],
+    'GOOG': ['goog', 'google', 'alphabet', 'sundar pichai'],
+    'AMZN': ['amzn', 'amazon', 'jeff bezos', 'andy jassy', 'amazon.com'],
+    'MSFT': ['msft', 'microsoft', 'satya nadella', 'windows'],
+    'META': ['meta', 'facebook', 'instagram', 'whatsapp', 'mark zuckerberg', 'zuckerberg'],
+    'NVDA': ['nvda', 'nvidia', 'jensen huang'],
+    'BTC-USD': ['bitcoin', 'btc'],
+    'ETH-USD': ['ethereum', 'eth'],
+  }
+
+  // Return keywords if mapped, otherwise just the symbol
+  return symbolMap[symbol.toUpperCase()] || [symbol]
+}
+
 export default function StockNewsChart() {
   const [selectedStock, setSelectedStock] = useState('')
   const [availableStocks, setAvailableStocks] = useState<Array<{ symbol: string; name: string }>>([])
@@ -182,9 +201,12 @@ export default function StockNewsChart() {
       const newsResponse = await axios.get(`/api/news?${newsParams.toString()}`)
       const allNews = newsResponse.data
 
+      // Filter news for this stock - match symbol OR company name keywords
+      const symbolKeywords = getSymbolKeywords(symbol)
       const relevantNews = allNews.filter((article: NewsArticle) => {
         const titleAndEntities = `${article.title} ${article.entities.map(e => e.name).join(' ')}`.toLowerCase()
-        return titleAndEntities.includes(symbol.toLowerCase())
+        // Match if any keyword is found
+        return symbolKeywords.some(keyword => titleAndEntities.includes(keyword.toLowerCase()))
       })
 
       setNewsArticles(relevantNews)
