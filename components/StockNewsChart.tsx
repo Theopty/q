@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { format } from 'date-fns'
+import NewsQueryManager from './NewsQueryManager'
 
 interface StockData {
   id: string
@@ -85,6 +86,9 @@ export default function StockNewsChart() {
 
   // Active chips tab
   const [activeChipsTab, setActiveChipsTab] = useState<'people' | 'organizations' | 'keywords'>('people')
+
+  // Active view tab
+  const [activeView, setActiveView] = useState<'analysis' | 'queries'>('analysis')
 
   // Load available stocks from database on mount
   useEffect(() => {
@@ -477,16 +481,43 @@ export default function StockNewsChart() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Top Bar */}
-        <div className="p-4 border-b border-gray-800">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-            {selectedStock ? `${selectedStock} ANALYSIS` : 'PRICE CHART · NEWS CORRELATION'}
-          </h2>
+        {/* Top Bar with Tabs */}
+        <div className="border-b border-gray-800 flex items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveView('analysis')}
+              className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-all relative ${
+                activeView === 'analysis'
+                  ? 'text-white'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {selectedStock ? `${selectedStock} ANALYSIS` : 'MARKET ANALYSIS'}
+              {activeView === 'analysis' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveView('queries')}
+              className={`px-4 py-3 text-xs font-bold uppercase tracking-wider transition-all relative ${
+                activeView === 'queries'
+                  ? 'text-white'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              NEWS QUERIES
+              {activeView === 'queries' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500"></div>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4">
-          {!selectedStock ? (
+          {activeView === 'queries' ? (
+            <NewsQueryManager />
+          ) : !selectedStock ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <Search className="w-16 h-16 mx-auto text-gray-700 mb-4" />

@@ -72,3 +72,16 @@ model WatchlistStock {
   name      String
   addedAt   DateTime @default(now())
 }
+
+model NewsQuery {
+  id            String   @id @default(uuid())
+  keyword       String
+  dateRanges    String   // JSON encoded array of {from, to, articleCount}
+  totalArticles Int      @default(0)
+  lastFetchedAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([keyword])
+  @@index([lastFetchedAt])
+}

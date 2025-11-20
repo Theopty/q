@@ -165,6 +165,65 @@ export async function POST(request: NextRequest) {
 
     console.log(`Saved ${savedArticles.length} new articles to database`)
 
+    // Save query metadata to history
+    if (query && from_date && to_date) {
+      try {
+        const existingQuery = await prisma.newsQuery.findFirst({
+          where: { keyword: query.toLowerCase() },
+        })
+
+        const newDateRange = {
+          from: from_date,
+          to: to_date,
+          articleCount: savedArticles.length,
+          fetchedAt: new Date().toISOString(),
+        }
+
+        if (existingQuery) {
+          const existingRanges = JSON.parse(existingQuery.dateRanges)
+          const rangeExists = existingRanges.some(
+            (range: any) => range.from === from_date && range.to === to_date
+          )
+
+          let updatedRanges
+          if (rangeExists) {
+            updatedRanges = existingRanges.map((range: any) =>
+              range.from === from_date && range.to === to_date
+                ? { ...range, articleCount: range.articleCount + savedArticles.length, fetchedAt: newDateRange.fetchedAt }
+                : range
+            )
+          } else {
+            updatedRanges = [...existingRanges, newDateRange]
+          }
+
+          const totalArticles = updatedRanges.reduce(
+            (sum: number, range: any) => sum + range.articleCount,
+            0
+          )
+
+          await prisma.newsQuery.update({
+            where: { id: existingQuery.id },
+            data: {
+              dateRanges: JSON.stringify(updatedRanges),
+              totalArticles,
+              lastFetchedAt: new Date(),
+            },
+          })
+        } else {
+          await prisma.newsQuery.create({
+            data: {
+              keyword: query.toLowerCase(),
+              dateRanges: JSON.stringify([newDateRange]),
+              totalArticles: savedArticles.length,
+            },
+          })
+        }
+      } catch (queryError) {
+        console.error('Error saving query metadata:', queryError)
+        // Don't fail the whole request if query metadata fails
+      }
+    }
+
     return NextResponse.json({
       message: `Fetched ${newsResponse.news.length} articles, saved ${savedArticles.length} new articles`,
       totalResults: newsResponse.available,
