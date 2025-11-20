@@ -6,15 +6,26 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET(request: NextRequest) {
   try {
-    const queries = await prisma.newsQuery.findMany({
-      orderBy: {
-        lastFetchedAt: 'desc',
-      },
-    })
+    // Use raw SQL since Prisma client may not have NewsQuery model yet
+    const queries = await prisma.$queryRawUnsafe<Array<{
+      id: string
+      keyword: string
+      dateRanges: string
+      totalArticles: number
+      lastFetchedAt: Date
+      createdAt: Date
+      updatedAt: Date
+    }>>(`
+      SELECT * FROM NewsQuery
+      ORDER BY lastFetchedAt DESC
+    `)
 
     // Parse dateRanges JSON for each query
     const parsedQueries = queries.map(query => ({
       ...query,
+      lastFetchedAt: query.lastFetchedAt.toISOString(),
+      createdAt: query.createdAt.toISOString(),
+      updatedAt: query.updatedAt.toISOString(),
       dateRanges: JSON.parse(query.dateRanges),
     }))
 
@@ -43,12 +54,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if query exists for this keyword
-    const existingQuery = await prisma.newsQuery.findFirst({
-      where: {
-        keyword: keyword.toLowerCase(),
-      },
-    })
+    // Check if query exists for this keyword using raw SQL
+    const existingQueries = await prisma.$queryRawUnsafe<Array<{
+      id: string
+      keyword: string
+      dateRanges: string
+      totalArticles: number
+      lastFetchedAt: Date
+    }>>(`
+      SELECT * FROM NewsQuery
+      WHERE keyword = ?
+      LIMIT 1
+    `, keyword.toLowerCase())
+
+    const existingQuery = existingQueries[0]
 
     const newDateRange = {
       from: from_date,
@@ -84,32 +103,38 @@ export async function POST(request: NextRequest) {
         0
       )
 
-      const updated = await prisma.newsQuery.update({
-        where: { id: existingQuery.id },
-        data: {
-          dateRanges: JSON.stringify(updatedRanges),
-          totalArticles,
-          lastFetchedAt: new Date(),
-        },
-      })
+      await prisma.$executeRawUnsafe(`
+        UPDATE NewsQuery
+        SET dateRanges = ?,
+            totalArticles = ?,
+            lastFetchedAt = ?,
+            updatedAt = ?
+        WHERE id = ?
+      `, JSON.stringify(updatedRanges), totalArticles, new Date().toISOString(), new Date().toISOString(), existingQuery.id)
 
       return NextResponse.json({
-        ...updated,
+        id: existingQuery.id,
+        keyword: keyword.toLowerCase(),
         dateRanges: updatedRanges,
+        totalArticles,
+        lastFetchedAt: new Date().toISOString(),
       })
     } else {
       // Create new query
-      const created = await prisma.newsQuery.create({
-        data: {
-          keyword: keyword.toLowerCase(),
-          dateRanges: JSON.stringify([newDateRange]),
-          totalArticles: articleCount || 0,
-        },
-      })
+      const id = crypto.randomUUID()
+      const now = new Date().toISOString()
+
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO NewsQuery (id, keyword, dateRanges, totalArticles, lastFetchedAt, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, id, keyword.toLowerCase(), JSON.stringify([newDateRange]), articleCount || 0, now, now, now)
 
       return NextResponse.json({
-        ...created,
+        id,
+        keyword: keyword.toLowerCase(),
         dateRanges: [newDateRange],
+        totalArticles: articleCount || 0,
+        lastFetchedAt: now,
       })
     }
   } catch (error) {
@@ -136,9 +161,10 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    await prisma.newsQuery.delete({
-      where: { id },
-    })
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM NewsQuery
+      WHERE id = ?
+    `, id)
 
     return NextResponse.json({ message: 'Query deleted successfully' })
   } catch (error) {

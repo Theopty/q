@@ -165,12 +165,21 @@ export async function POST(request: NextRequest) {
 
     console.log(`Saved ${savedArticles.length} new articles to database`)
 
-    // Save query metadata to history
+    // Save query metadata to history using raw SQL
     if (query && from_date && to_date) {
       try {
-        const existingQuery = await prisma.newsQuery.findFirst({
-          where: { keyword: query.toLowerCase() },
-        })
+        const existingQueries = await prisma.$queryRawUnsafe<Array<{
+          id: string
+          keyword: string
+          dateRanges: string
+          totalArticles: number
+        }>>(`
+          SELECT * FROM NewsQuery
+          WHERE keyword = ?
+          LIMIT 1
+        `, query.toLowerCase())
+
+        const existingQuery = existingQueries[0]
 
         const newDateRange = {
           from: from_date,
@@ -201,22 +210,22 @@ export async function POST(request: NextRequest) {
             0
           )
 
-          await prisma.newsQuery.update({
-            where: { id: existingQuery.id },
-            data: {
-              dateRanges: JSON.stringify(updatedRanges),
-              totalArticles,
-              lastFetchedAt: new Date(),
-            },
-          })
+          await prisma.$executeRawUnsafe(`
+            UPDATE NewsQuery
+            SET dateRanges = ?,
+                totalArticles = ?,
+                lastFetchedAt = ?,
+                updatedAt = ?
+            WHERE id = ?
+          `, JSON.stringify(updatedRanges), totalArticles, new Date().toISOString(), new Date().toISOString(), existingQuery.id)
         } else {
-          await prisma.newsQuery.create({
-            data: {
-              keyword: query.toLowerCase(),
-              dateRanges: JSON.stringify([newDateRange]),
-              totalArticles: savedArticles.length,
-            },
-          })
+          const id = crypto.randomUUID()
+          const now = new Date().toISOString()
+
+          await prisma.$executeRawUnsafe(`
+            INSERT INTO NewsQuery (id, keyword, dateRanges, totalArticles, lastFetchedAt, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `, id, query.toLowerCase(), JSON.stringify([newDateRange]), savedArticles.length, now, now, now)
         }
       } catch (queryError) {
         console.error('Error saving query metadata:', queryError)
