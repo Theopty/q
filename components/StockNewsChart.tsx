@@ -28,6 +28,7 @@ interface StockData {
 interface NewsArticle {
   id: string
   title: string
+  description?: string | null
   url: string
   source: string
   sentiment: string | null

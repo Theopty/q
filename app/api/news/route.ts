@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { fetchNews, convertToNewsArticle } from '@/lib/worldnews'
 
 /**
- * GET /api/news - Fetch news articles from database
+ * GET /api/news - Fetch news articles from database using raw SQL
  */
 export async function GET(request: NextRequest) {
   try {
@@ -16,69 +16,97 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get('dateTo')
     const entity = searchParams.get('entity')
 
-    // Build where clause
-    const where: any = {}
+    // Build SQL query with filters
+    let sql = 'SELECT * FROM NewsArticle WHERE 1=1'
+    const params: any[] = []
 
     if (sources && sources.length > 0) {
-      where.source = {
-        in: sources,
-      }
+      sql += ` AND source IN (${sources.map(() => '?').join(',')})`
+      params.push(...sources)
     }
 
     if (sentiment) {
-      where.sentiment = sentiment
+      sql += ' AND sentiment = ?'
+      params.push(sentiment)
     }
 
-    if (dateFrom || dateTo) {
-      where.publishedAt = {}
-      if (dateFrom) where.publishedAt.gte = new Date(dateFrom)
-      if (dateTo) where.publishedAt.lte = new Date(dateTo)
+    if (dateFrom) {
+      sql += ' AND publishedAt >= ?'
+      params.push(new Date(dateFrom).toISOString())
     }
 
+    if (dateTo) {
+      sql += ' AND publishedAt <= ?'
+      params.push(new Date(dateTo).toISOString())
+    }
+
+    sql += ' ORDER BY publishedAt DESC LIMIT 500'
+
+    // Use raw SQL query
+    let articles = await prisma.$queryRawUnsafe<Array<{
+      id: string
+      title: string
+      description: string | null
+      content: string | null
+      url: string
+      imageUrl: string | null
+      source: string
+      category: string
+      keywords: string
+      language: string
+      country: string | null
+      sentiment: string | null
+      publishedAt: Date
+      fetchedAt: Date
+      createdAt: Date
+      updatedAt: Date
+    }>>(sql, ...params)
+
+    // Get entities for each article
+    const articlesWithEntities = await Promise.all(
+      articles.map(async (article) => {
+        const entities = await prisma.$queryRawUnsafe<Array<{
+          id: string
+          name: string
+          type: string
+        }>>('SELECT id, name, type FROM NewsEntity WHERE articleId = ?', article.id)
+
+        return {
+          ...article,
+          publishedAt: article.publishedAt.toISOString(),
+          fetchedAt: article.fetchedAt.toISOString(),
+          createdAt: article.createdAt.toISOString(),
+          updatedAt: article.updatedAt.toISOString(),
+          category: JSON.parse(article.category),
+          keywords: JSON.parse(article.keywords),
+          entities: entities || [],
+        }
+      })
+    )
+
+    // Filter by entity name if provided
+    let filteredArticles = articlesWithEntities
     if (entity) {
-      where.entities = {
-        some: {
-          name: {
-            contains: entity,
-            mode: 'insensitive',
-          },
-        },
-      }
+      filteredArticles = filteredArticles.filter((article) =>
+        article.entities.some((e) => e.name.toLowerCase().includes(entity.toLowerCase()))
+      )
     }
-
-    let articles = await prisma.newsArticle.findMany({
-      where,
-      include: {
-        entities: true,
-      },
-      orderBy: {
-        publishedAt: 'desc',
-      },
-      take: 500,
-    })
-
-    // Parse JSON fields and filter in memory
-    articles = articles.map((article) => ({
-      ...article,
-      category: JSON.parse(article.category),
-      keywords: JSON.parse(article.keywords),
-    }))
 
     // Filter by keywords if provided
     if (keywords && keywords.length > 0) {
-      articles = articles.filter((article) =>
+      filteredArticles = filteredArticles.filter((article) =>
         keywords.some((kw) => article.keywords.some((k: string) => k.toLowerCase().includes(kw.toLowerCase())))
       )
     }
 
     // Filter by categories if provided
     if (categories && categories.length > 0) {
-      articles = articles.filter((article) =>
+      filteredArticles = filteredArticles.filter((article) =>
         categories.some((cat) => article.category.includes(cat))
       )
     }
 
-    return NextResponse.json(articles.slice(0, 100))
+    return NextResponse.json(filteredArticles.slice(0, 100))
   } catch (error) {
     console.error('Error fetching news:', error)
     return NextResponse.json(
@@ -110,51 +138,78 @@ export async function POST(request: NextRequest) {
 
     console.log(`WorldNewsAPI returned ${newsResponse.news.length} articles (${newsResponse.available} available total)`)
 
-    // Store articles in database
+    // Store articles in database using raw SQL
     const savedArticles = []
 
     for (const article of newsResponse.news) {
       const newsArticle = convertToNewsArticle(article)
 
-      // Check if article already exists
-      const existing = await prisma.newsArticle.findFirst({
-        where: { url: newsArticle.url },
-      })
+      // Check if article already exists using raw SQL
+      const existing = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+        'SELECT id FROM NewsArticle WHERE url = ? LIMIT 1',
+        newsArticle.url
+      )
 
-      if (!existing) {
+      if (existing.length === 0) {
         try {
-          const saved = await prisma.newsArticle.create({
-            data: {
-              title: newsArticle.title,
-              description: newsArticle.description,
-              content: newsArticle.content,
-              url: newsArticle.url,
-              imageUrl: newsArticle.imageUrl,
-              source: newsArticle.source,
-              category: JSON.stringify(newsArticle.category),
-              keywords: JSON.stringify(newsArticle.keywords),
-              language: newsArticle.language || 'en',
-              country: newsArticle.country,
-              sentiment: newsArticle.sentiment,
-              publishedAt: newsArticle.publishedAt,
-              entities: {
-                create: newsArticle.entities?.map((entity) => ({
-                  name: entity.name,
-                  type: entity.type,
-                })),
-              },
-            },
-            include: {
-              entities: true,
-            },
+          const articleId = crypto.randomUUID()
+          const now = new Date().toISOString()
+
+          // Insert article using raw SQL
+          await prisma.$executeRawUnsafe(`
+            INSERT INTO NewsArticle (
+              id, title, description, content, url, imageUrl, source,
+              category, keywords, language, country, sentiment,
+              publishedAt, fetchedAt, createdAt, updatedAt
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+            articleId,
+            newsArticle.title,
+            newsArticle.description || null,
+            newsArticle.content || null,
+            newsArticle.url,
+            newsArticle.imageUrl || null,
+            newsArticle.source,
+            JSON.stringify(newsArticle.category),
+            JSON.stringify(newsArticle.keywords),
+            newsArticle.language || 'en',
+            newsArticle.country || null,
+            newsArticle.sentiment || null,
+            newsArticle.publishedAt.toISOString(),
+            now,
+            now,
+            now
+          )
+
+          // Insert entities using raw SQL
+          const entities = []
+          if (newsArticle.entities && newsArticle.entities.length > 0) {
+            for (const entity of newsArticle.entities) {
+              const entityId = crypto.randomUUID()
+              await prisma.$executeRawUnsafe(`
+                INSERT INTO NewsEntity (id, name, type, articleId, createdAt)
+                VALUES (?, ?, ?, ?, ?)
+              `, entityId, entity.name, entity.type, articleId, now)
+
+              entities.push({
+                id: entityId,
+                name: entity.name,
+                type: entity.type,
+              })
+            }
+          }
+
+          savedArticles.push({
+            id: articleId,
+            ...newsArticle,
+            publishedAt: newsArticle.publishedAt.toISOString(),
+            fetchedAt: now,
+            createdAt: now,
+            updatedAt: now,
+            entities,
           })
 
-          // Parse JSON fields for response
-          savedArticles.push({
-            ...saved,
-            category: JSON.parse(saved.category),
-            keywords: JSON.parse(saved.keywords),
-          })
+          console.log('✅ Saved article:', newsArticle.title)
         } catch (saveError) {
           console.error('Error saving article:', newsArticle.title, saveError)
         }
