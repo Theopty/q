@@ -46,16 +46,21 @@ interface ChartDataPoint {
 // Helper function to get keywords for stock symbol matching
 const getSymbolKeywords = (symbol: string): string[] => {
   const symbolMap: Record<string, string[]> = {
-    'TSLA': ['tsla', 'tesla', 'elon musk', 'musk'],
-    'AAPL': ['aapl', 'apple', 'iphone', 'tim cook', 'apple inc'],
-    'GOOGL': ['googl', 'google', 'alphabet', 'sundar pichai'],
-    'GOOG': ['goog', 'google', 'alphabet', 'sundar pichai'],
-    'AMZN': ['amzn', 'amazon', 'jeff bezos', 'andy jassy', 'amazon.com'],
-    'MSFT': ['msft', 'microsoft', 'satya nadella', 'windows'],
-    'META': ['meta', 'facebook', 'instagram', 'whatsapp', 'mark zuckerberg', 'zuckerberg'],
-    'NVDA': ['nvda', 'nvidia', 'jensen huang'],
-    'BTC-USD': ['bitcoin', 'btc'],
-    'ETH-USD': ['ethereum', 'eth'],
+    'TSLA': ['tsla', 'tesla', 'tesla inc', 'elon musk', 'musk', 'model 3', 'model y', 'model s', 'model x', 'cybertruck', 'spacex'],
+    'AAPL': ['aapl', 'apple', 'apple inc', 'iphone', 'ipad', 'mac', 'tim cook', 'cook', 'ios', 'macbook'],
+    'GOOGL': ['googl', 'google', 'alphabet', 'alphabet inc', 'sundar pichai', 'pichai', 'android', 'youtube', 'chrome'],
+    'GOOG': ['goog', 'google', 'alphabet', 'alphabet inc', 'sundar pichai', 'pichai', 'android', 'youtube', 'chrome'],
+    'AMZN': ['amzn', 'amazon', 'amazon.com', 'amazon inc', 'jeff bezos', 'bezos', 'andy jassy', 'jassy', 'aws', 'prime'],
+    'MSFT': ['msft', 'microsoft', 'microsoft corp', 'satya nadella', 'nadella', 'windows', 'azure', 'office', 'xbox'],
+    'META': ['meta', 'meta platforms', 'facebook', 'instagram', 'whatsapp', 'mark zuckerberg', 'zuckerberg', 'oculus'],
+    'NVDA': ['nvda', 'nvidia', 'nvidia corp', 'jensen huang', 'huang', 'geforce', 'rtx', 'cuda'],
+    'BTC-USD': ['bitcoin', 'btc', 'satoshi', 'blockchain'],
+    'ETH-USD': ['ethereum', 'eth', 'vitalik', 'solidity'],
+    'NFLX': ['nflx', 'netflix', 'streaming'],
+    'DIS': ['dis', 'disney', 'walt disney', 'marvel', 'pixar'],
+    'BA': ['ba', 'boeing', 'airplane', 'aircraft'],
+    'INTC': ['intc', 'intel', 'chip', 'semiconductor'],
+    'AMD': ['amd', 'advanced micro devices', 'ryzen', 'radeon'],
   }
 
   // Return keywords if mapped, otherwise just the symbol
@@ -204,9 +209,21 @@ export default function StockNewsChart() {
       // Filter news for this stock - match symbol OR company name keywords
       const symbolKeywords = getSymbolKeywords(symbol)
       const relevantNews = allNews.filter((article: NewsArticle) => {
-        const titleAndEntities = `${article.title} ${article.entities.map(e => e.name).join(' ')}`.toLowerCase()
-        // Match if any keyword is found
-        return symbolKeywords.some(keyword => titleAndEntities.includes(keyword.toLowerCase()))
+        // Parse keywords array if it's a string
+        const articleKeywords = typeof article.keywords === 'string'
+          ? JSON.parse(article.keywords)
+          : (article.keywords || [])
+
+        // Build comprehensive search text from all relevant fields
+        const searchText = [
+          article.title || '',
+          article.description || '',
+          article.entities?.map(e => e.name).join(' ') || '',
+          articleKeywords.join(' ') || '',
+        ].join(' ').toLowerCase()
+
+        // Match if any keyword is found in the combined search text
+        return symbolKeywords.some(keyword => searchText.includes(keyword.toLowerCase()))
       })
 
       setNewsArticles(relevantNews)
